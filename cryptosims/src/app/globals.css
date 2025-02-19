@@ -3,28 +3,28 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+	--background: #ffffff;
+	--foreground: #171717;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-	--accents-8: #fafafa;
-	--accents-7: #eaeaea;
-	--accents-6: #999999;
-	--accents-5: #888888;
-	--accents-4: #666666;
-	--accents-3: #444444;
-	--accents-2: #333333;
-	--accents-1: #111111;
-	/* --accents-grey: #1f1f1f; */
-  }
+	:root {
+		--background: #0a0a0a;
+		--foreground: #ededed;
+		--accents-8: #fafafa;
+		--accents-7: #eaeaea;
+		--accents-6: #999999;
+		--accents-5: #888888;
+		--accents-4: #666666;
+		--accents-3: #444444;
+		--accents-2: #333333;
+		--accents-1: #111111;
+		/* --accents-grey: #1f1f1f; */
+	}
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+	color: var(--foreground);
+	background: var(--background);
+	font-family: Arial, Helvetica, sans-serif;
 }
