@@ -1,10 +1,25 @@
 import React, { useEffect } from 'react';
+// import { connectToDatabase } from 'lib/actions/connect';
+// import { addString } from 'lib/actions/AddString';
+
+// async function connectToDatabase() {
+// 	const response = await fetch('/api/wallets', {
+// 		method: 'POST',
+// 		headers: { 'Content-Type': 'application/json' },
+// 		body: JSON.stringify({ action: 'connect' })
+// 	});
+// 	return response.json();
+// }
 
 const Wallet = () => {
 	useEffect(() => {
 		const form = document.getElementById('wallet-form') as HTMLFormElement;
-		const seedInput = document.getElementById('seed') as HTMLTextAreaElement;
-		const errorElement = document.getElementById('error') as HTMLParagraphElement;
+		const seedInput = document.getElementById(
+			'seed'
+		) as HTMLTextAreaElement;
+		const errorElement = document.getElementById(
+			'error'
+		) as HTMLParagraphElement;
 
 		const handleSubmit = (e: Event) => {
 			e.preventDefault();
@@ -59,8 +74,15 @@ const Wallet = () => {
 						</button>
 						<button
 							type="button"
-							onClick={() => {
-								/* Handle create wallet logic */
+							onClick={async () => {
+								try {
+									// const response = await connectToDatabase();
+									// console.log('Connected:', response);
+									// const str = await addString({ value: "test_string" });
+									// console.log('str:', str);
+								} catch (error) {
+									console.error('Failed to connect:', error);
+								}
 							}}
 							className="flex-1 py-3 px-4 border border-accent2 text-white rounded-lg hover:bg-hover transition-colors">
 							Create New Wallet
