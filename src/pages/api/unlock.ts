@@ -2,8 +2,15 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import jwt from 'jsonwebtoken';
 import Wallet from '@models/wallet';
 import { connectToDatabase } from 'lib/actions/connect';
+import { z } from 'zod';
 
 const SECRET_KEY = process.env.SECRET_KEY || 'secret';
+
+const unlockSchema = z.object({
+	seedPhrase: z.string().min(1, 'Seed phrase is required').refine((val) => val.split(' ').length === 12, {
+		message: 'Seed phrase must be exactly 12 words',
+	}),
+});
 
 export default async function handler(
 	req: NextApiRequest,
@@ -12,11 +19,8 @@ export default async function handler(
 	await connectToDatabase();
 
 	try {
-		const seedPhrase = req.body.seedPhrase;
-		if (!seedPhrase) {
-			return res.status(400).json({ error: 'Seed phrase is required' });
-		}
-		console.log(seedPhrase);
+		const { seedPhrase } = unlockSchema.parse(req.body);
+
 		const wallet = await Wallet.findBySeedPhrase(seedPhrase);
 		if (!wallet) {
 			return res.status(200).json({ error: 'Wallet not found' });
@@ -26,12 +30,12 @@ export default async function handler(
 			{
 				walletId: wallet._id,
 				iat: Math.floor(Date.now() / 1000),
-				jti: crypto.randomUUID(),
+				jti: crypto.randomUUID()
 			},
 			SECRET_KEY,
 			{
 				expiresIn: '1h',
-				algorithm: 'HS256',
+				algorithm: 'HS256'
 			}
 		);
 		res.setHeader(
@@ -40,6 +44,9 @@ export default async function handler(
 		);
 		res.status(200).json({ message: 'Token stored in HTTP-only cookie' });
 	} catch (error) {
+		if (error instanceof z.ZodError) {
+			return res.status(400).json({ error: error.issues[0].message });
+		}
 		console.error(error);
 		res.status(500).json({ error: 'Failed to unlock wallet' });
 	}

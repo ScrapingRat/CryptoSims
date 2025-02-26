@@ -15,7 +15,7 @@ interface WalletModel extends mongoose.Model<IWallet> {
 
 const WalletSchema = new Schema({
 	seedPhrase: { type: String, required: true, unique: true },
-	seedPhraseFingerprint: { type: String, required: true, index: true },
+	seedPhraseFingerprint: { type: String, required: false, index: true },
 	balance: { type: Number, required: true, default: 0 },
 });
 
