@@ -27,7 +27,7 @@ export default async function handler(
 		});
 		await wallet.save();
 
-		res.status(200).json({ seedPhrase });
+		res.status(200).json({ seedPhrase, balance: wallet.balance });
 	} catch (error) {
 		console.error(error);
 		res.status(500).json({ error: 'Failed to create new wallet' });

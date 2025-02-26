@@ -12,8 +12,11 @@ export default async function handler(
 	await connectToDatabase();
 
 	try {
-		const seedPhrase =
-			'bring maze fall random wise eager episode mutual enact shine tomato range';
+		const seedPhrase = req.body.seedPhrase;
+		if (!seedPhrase) {
+			return res.status(400).json({ error: 'Seed phrase is required' });
+		}
+		console.log(seedPhrase);
 		const wallet = await Wallet.findBySeedPhrase(seedPhrase);
 		if (!wallet) {
 			return res.status(200).json({ error: 'Wallet not found' });
@@ -23,12 +26,12 @@ export default async function handler(
 			{
 				walletId: wallet._id,
 				iat: Math.floor(Date.now() / 1000),
-				jti: crypto.randomUUID()
+				jti: crypto.randomUUID(),
 			},
 			SECRET_KEY,
 			{
 				expiresIn: '1h',
-				algorithm: 'HS256'
+				algorithm: 'HS256',
 			}
 		);
 		res.setHeader(
