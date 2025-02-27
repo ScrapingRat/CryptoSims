@@ -1,7 +1,7 @@
 'use server';
 import { connect } from '../mongodb';
 
-export async function connectToDatabase() {
+const connectToDatabase = async () => {
 	try {
 		await connect();
 		return { success: true };
@@ -12,3 +12,5 @@ export async function connectToDatabase() {
 		};
 	}
 }
+
+export default connectToDatabase;

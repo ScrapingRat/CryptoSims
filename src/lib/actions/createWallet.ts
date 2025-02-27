@@ -1,15 +1,15 @@
-'use server'
+'use server';
 
 import * as bip39 from 'bip39';
 import Wallet from '@models/wallet';
-import { connectToDatabase } from 'lib/actions/connect';
-import { isAuth } from './isAuth';
+import connectToDatabase from 'lib/actions/connectToDatabase';
+import isAuth from './isAuth';
 
 function generateRandomInteger(min: number, max: number) {
 	return Math.floor(min + Math.random() * (max - min + 1));
 }
 
-export default async function createWallet() {
+const createWallet = async () => {
 	await connectToDatabase();
 
 	const authenticated = await isAuth();
@@ -32,14 +32,14 @@ export default async function createWallet() {
 
 		if (attempts >= MAX_ATTEMPTS) {
 			return {
-				error: 'Failed to generate a unique seed phrase after multiple attempts'
+				error: 'Failed to generate a unique seed phrase after multiple attempts',
 			};
 		}
 
 		const balance = generateRandomInteger(0, 1000);
 		const wallet = new Wallet({
 			seedPhrase,
-			balance
+			balance,
 		});
 
 		await wallet.save();
@@ -49,4 +49,6 @@ export default async function createWallet() {
 		console.error(error);
 		return { error: 'Failed to create new wallet' };
 	}
-}
+};
+
+export default createWallet;

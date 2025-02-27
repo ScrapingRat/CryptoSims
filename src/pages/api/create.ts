@@ -1,7 +1,9 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import * as bip39 from 'bip39';
 import Wallet from '@models/wallet';
-import { connectToDatabase } from 'lib/actions/connect';
+import connectToDatabase from 'lib/actions/connectToDatabase';
+
+const ROUTE_ENABLED = false;
 
 function generateRandomInteger(min: number, max: number) {
 	return Math.floor(min + Math.random() * (max - min + 1));
@@ -11,6 +13,12 @@ export default async function handler(
 	req: NextApiRequest,
 	res: NextApiResponse
 ) {
+	if (!ROUTE_ENABLED) {
+		return res
+			.status(503)
+			.json({ error: 'This API endpoint is temporarily disabled' });
+	}
+
 	await connectToDatabase();
 
 	try {
@@ -23,7 +31,7 @@ export default async function handler(
 		}
 		const wallet = new Wallet({
 			seedPhrase,
-			balance: generateRandomInteger(0, 1000)
+			balance: generateRandomInteger(0, 1000),
 		});
 		await wallet.save();
 

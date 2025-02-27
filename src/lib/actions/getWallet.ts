@@ -3,16 +3,17 @@
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 import Wallet from '@models/wallet';
-import { connectToDatabase } from 'lib/actions/connect';
+import getConfig from '../getConfig';
+import connectToDatabase from 'lib/actions/connectToDatabase';
 
-const SECRET_KEY = process.env.SECRET_KEY || 'secret';
+const { SECRET_KEY } = getConfig();
 
 type WalletResponse = {
 	wallet?: { balance: number };
 	error?: string;
 };
 
-export async function getWallet(): Promise<WalletResponse> {
+const getWallet = async (): Promise<WalletResponse> => {
 	await connectToDatabase();
 
 	try {
@@ -36,7 +37,7 @@ export async function getWallet(): Promise<WalletResponse> {
 		}
 
 		const sanitizedWallet = {
-			balance: wallet.balance
+			balance: wallet.balance,
 		};
 
 		return { wallet: sanitizedWallet };
@@ -44,4 +45,6 @@ export async function getWallet(): Promise<WalletResponse> {
 		console.error('Failed to retrieve wallet:', error);
 		return { error: 'Failed to retrieve wallet' };
 	}
-}
+};
+
+export default getWallet;

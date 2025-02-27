@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
+import getConfig from './getConfig';
 
-const MONGODB_URI = process.env.MONGODB_URI as string;
+const { MONGODB_URI } = getConfig();
 
 const options = {
 	dbName: 'cryptosims',

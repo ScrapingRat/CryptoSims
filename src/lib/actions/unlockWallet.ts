@@ -4,21 +4,22 @@ import { z } from 'zod';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import Wallet from '@models/wallet';
-import { connectToDatabase } from 'lib/actions/connect';
+import connectToDatabase from 'lib/actions/connectToDatabase';
 import { cookies } from 'next/headers';
+import getConfig from '../getConfig';
 
-const SECRET_KEY = process.env.SECRET_KEY || 'secret';
+const { SECRET_KEY } = getConfig();
 
 const unlockSchema = z.object({
 	seedPhrase: z
 		.string()
 		.min(1, 'Seed phrase is required')
 		.refine((val) => val.split(' ').length === 12, {
-			message: 'Seed phrase must be exactly 12 words'
-		})
+			message: 'Seed phrase must be exactly 12 words',
+		}),
 });
 
-export async function unlockWallet(formData: FormData) {
+const unlockWallet = async (formData: FormData) => {
 	const seedPhrase = formData.get('seedPhrase') as string;
 
 	try {
@@ -35,12 +36,12 @@ export async function unlockWallet(formData: FormData) {
 			{
 				walletId: wallet._id,
 				iat: Math.floor(Date.now() / 1000),
-				jti: crypto.randomUUID()
+				jti: crypto.randomUUID(),
 			},
 			SECRET_KEY,
 			{
 				expiresIn: '1h',
-				algorithm: 'HS256'
+				algorithm: 'HS256',
 			}
 		);
 
@@ -52,7 +53,7 @@ export async function unlockWallet(formData: FormData) {
 			maxAge: 3600,
 			path: '/',
 			sameSite: 'strict',
-			domain: process.env.DOMAIN
+			domain: process.env.DOMAIN,
 		});
 
 		return { success: true, message: 'Wallet unlocked successfully' };
@@ -63,4 +64,6 @@ export async function unlockWallet(formData: FormData) {
 		console.error(error);
 		return { error: 'Failed to unlock wallet' };
 	}
-}
+};
+
+export default unlockWallet;

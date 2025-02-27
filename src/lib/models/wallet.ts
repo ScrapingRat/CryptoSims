@@ -66,8 +66,7 @@ WalletSchema.statics.findBySeedPhrase = async function (seedPhrase: string) {
 
 	for (const wallet of potentialWallets) {
 		const isMatch = await wallet.compareSeedPhrase(seedPhrase);
-		if (isMatch) {
-			return wallet;
+		if (isMatch) {			return wallet;
 		}
 	}
 	return null;
@@ -76,4 +75,5 @@ WalletSchema.statics.findBySeedPhrase = async function (seedPhrase: string) {
 const Wallet =
 	(mongoose.models.Wallet as WalletModel) ||
 	mongoose.model<IWallet, WalletModel>('Wallet', WalletSchema);
+
 export default Wallet;

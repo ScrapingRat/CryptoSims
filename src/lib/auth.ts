@@ -1,8 +1,8 @@
 import jwt from 'jsonwebtoken';
 import { NextApiRequest, NextApiResponse } from 'next';
+import getConfig from './getConfig';
 
-const SECRET_KEY = process.env.SECRET_KEY || 'secret';
-
+const { SECRET_KEY } = getConfig();
 export interface AuthTokenPayload {
 	walletId: string;
 }

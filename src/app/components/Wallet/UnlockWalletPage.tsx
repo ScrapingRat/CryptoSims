@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { unlockWallet } from 'lib/actions/unlockWallet';
-import { getWallet } from 'lib/actions/getWallet';
-import { isAuth } from 'lib/actions/isAuth';
+import unlockWallet from 'lib/actions/unlockWallet';
+import getWallet from 'lib/actions/getWallet';
+import isAuth from 'lib/actions/isAuth';
 
 const UnlockWalletPage = () => {
 	const [isLoading, setIsLoading] = useState(false);

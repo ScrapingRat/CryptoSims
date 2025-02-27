@@ -12,12 +12,12 @@ export default function Navbar() {
 					</span>
 				</Link>
 				<div className="flex md:order-2 space-x-3 md:space-x-0 rtl:space-x-reverse">
-					<Link
+					{/* <Link
 						href="/wallet"
 						type="button"
 						className="text-white bg-background border border-accent2 hover:bg-hover font-semibold rounded-lg text-sm px-4 py-2 text-center">
 						Wallet
-					</Link>
+					</Link> */}
 					<button
 						data-collapse-toggle="navbar-sticky"
 						type="button"
@@ -46,11 +46,11 @@ export default function Navbar() {
 					id="navbar-sticky">
 					<ul className="flex flex-col p-4 md:p-0 mt-4 font-semibold border border-gray-100 rounded-lg bg-gray-50 md:space-x-8 rtl:space-x-reverse md:flex-row md:mt-0 md:border-0 md:bg-white dark:bg-gray-800 md:dark:bg-gray-900 dark:border-gray-700">
 						<li>
-							<Link
+							{/* <Link
 								href="/#markets"
 								className="block py-2 px-3 bg-black text-gray-500">
 								Markets
-							</Link>
+							</Link> */}
 						</li>
 					</ul>
 				</div>

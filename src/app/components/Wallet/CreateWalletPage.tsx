@@ -6,7 +6,6 @@ import createWallet from 'lib/actions/createWallet';
 const CreateWalletPage = () => {
 	const [isLoading, setIsLoading] = useState(false);
 	const [seedPhrase, setSeedPhrase] = useState('');
-	const [balance, setBalance] = useState<number | null>(null);
 	const [error, setError] = useState('');
 	const [copied, setCopied] = useState(false);
 
@@ -33,7 +32,6 @@ const CreateWalletPage = () => {
 				setError(result.error);
 			} else if (result.seedPhrase && result.balance !== undefined) {
 				setSeedPhrase(result.seedPhrase);
-				setBalance(result.balance);
 			}
 		} catch (err) {
 			console.error('Error creating wallet:', err);
@@ -95,14 +93,10 @@ const CreateWalletPage = () => {
 							</div>
 							{copied && (
 								<p className="text-xs text-green-500 mt-1">
-									Copied to clipboard!
+									Seed copied to clipboard!
 								</p>
 							)}
 						</div>
-						<p className="text-green-400">
-							Initial Balance:{' '}
-							<span className="font-bold">{balance}</span>
-						</p>
 					</div>
 				)}
 

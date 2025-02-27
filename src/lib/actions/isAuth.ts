@@ -2,16 +2,12 @@
 
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
-import { connectToDatabase } from 'lib/actions/connect';
+import getConfig from 'lib/getConfig';
+import connectToDatabase from 'lib/actions/connectToDatabase';
 
-const SECRET_KEY = process.env.SECRET_KEY || 'secret';
+const { SECRET_KEY } = getConfig();
 
-/**
- * Checks if the user is authenticated by validating their JWT token
- * @returns {Promise<boolean>} True if authenticated, false otherwise
- */
-
-export const isAuth = async (): Promise<boolean> => {
+const isAuth = async (): Promise<boolean> => {
 	try {
 		await connectToDatabase();
 
@@ -34,3 +30,5 @@ export const isAuth = async (): Promise<boolean> => {
 		return false;
 	}
 };
+
+export default isAuth;

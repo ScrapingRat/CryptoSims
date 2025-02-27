@@ -2,14 +2,21 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import jwt from 'jsonwebtoken';
 import Wallet from '@models/wallet';
-import { connectToDatabase } from 'lib/actions/connect';
+import connectToDatabase from 'lib/actions/connectToDatabase';
 
 const SECRET_KEY = process.env.SECRET_KEY || 'secret';
+const ROUTE_ENABLED = false;
 
 export default async function handler(
 	req: NextApiRequest,
 	res: NextApiResponse
 ) {
+	if (!ROUTE_ENABLED) {
+		return res
+			.status(503)
+			.json({ error: 'This API endpoint is temporarily disabled' });
+	}
+
 	await connectToDatabase();
 
 	try {

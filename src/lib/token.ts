@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
+import getConfig from './getConfig';
 
-const SECRET_KEY = process.env.SECRET_KEY;
+const { SECRET_KEY } = getConfig();
 
 export function generateAuthToken(walletId: string) {
 	if (!SECRET_KEY) {
