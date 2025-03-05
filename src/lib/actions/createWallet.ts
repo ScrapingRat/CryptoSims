@@ -32,14 +32,14 @@ const createWallet = async () => {
 
 		if (attempts >= MAX_ATTEMPTS) {
 			return {
-				error: 'Failed to generate a unique seed phrase after multiple attempts',
+				error: 'Failed to generate a unique seed phrase after multiple attempts'
 			};
 		}
 
 		const balance = generateRandomInteger(0, 1000);
 		const wallet = new Wallet({
 			seedPhrase,
-			balance,
+			balance
 		});
 
 		await wallet.save();

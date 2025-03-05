@@ -5,23 +5,52 @@ import { useEffect, useState } from 'react';
 import isAuth from 'lib/actions/isAuth';
 import getWallet from 'lib/actions/getWallet';
 import lockWallet from 'lib/actions/lockWallet';
+import connectToDatabase from 'lib/actions/connectToDatabase';
 
 const Wallet = () => {
+	const [dbConnected, setDbConnected] = useState(false);
 	const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 	const [isUnlocked, setIsUnlocked] = useState(false);
 	// const [message, setMessage] = useState('');
 	const [balance, setBalance] = useState<number | null>(null);
-	// const [error, setError] = useState('');
+	const [error, setError] = useState('');
 
-	useEffect(() => {
-		const check = async () => {
+	const refreshWalletStatus = () => {
+		setIsUnlocked(true);
+	};
+
+	const checkDb = async () => {
+		const result = await connectToDatabase();
+		setDbConnected(result.success);
+		return result.success;
+	};
+
+	const checkAuth = async () => {
+		setIsCheckingAuth(true);
+		try {
 			const auth = await isAuth();
 			setIsUnlocked(auth);
+		} catch (error) {
+			console.error('Failed to check authentication:', error);
+			setIsUnlocked(false);
+		} finally {
 			setIsCheckingAuth(false);
-		};
+		}
+	};
 
-		check();
-	}, []);
+	useEffect(() => {
+		checkDb();
+
+		if (dbConnected) {
+			checkAuth();
+		}
+	}, [dbConnected]);
+
+	useEffect(() => {
+		if (isUnlocked) {
+			fetchWallet();
+		}
+	}, [isUnlocked]);
 
 	const fetchWallet = async () => {
 		try {
@@ -41,17 +70,11 @@ const Wallet = () => {
 		}
 	};
 
-	useEffect(() => {
-		if (isUnlocked) {
-			fetchWallet();
-		}
-	}, [isUnlocked]);
-
-	if (isCheckingAuth) {
+	if (!dbConnected) {
+		return <p>Establishing connection to the database...</p>;
+	} else if (isCheckingAuth) {
 		return <p>Loading...</p>;
-	} else if (!isUnlocked) {
-		return <NoWalletPage />;
-	} else {
+	} else if (isUnlocked) {
 		return (
 			<div className="space-y-6">
 				<div className="p-6 border border-accent2 rounded-lg bg-background/50">
@@ -93,6 +116,8 @@ const Wallet = () => {
 				</div>
 			</div>
 		);
+	} else {
+		return <NoWalletPage onWalletUnlocked={refreshWalletStatus}/>;
 	}
 };
 

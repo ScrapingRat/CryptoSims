@@ -1,4 +1,5 @@
 'use server';
+
 import { connect } from '../mongodb';
 
 const connectToDatabase = async () => {
@@ -11,6 +12,6 @@ const connectToDatabase = async () => {
 			error: error instanceof Error ? error.message : 'Unknown error'
 		};
 	}
-}
+};
 
 export default connectToDatabase;
