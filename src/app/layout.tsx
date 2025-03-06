@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { WalletProvider } from './contexts/WalletContext';
 import Navbar from './components/Navbar';
 
 export const metadata: Metadata = {
@@ -15,10 +16,12 @@ export default function RootLayout({
 	return (
 		<html lang="en">
 			<body>
-				<header>
-					<Navbar />
-				</header>
-				<main>{children}</main>
+				<WalletProvider>
+					<header>
+						<Navbar />
+					</header>
+					<main>{children}</main>
+				</WalletProvider>
 			</body>
 		</html>
 	);

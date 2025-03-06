@@ -37,7 +37,7 @@ const getWallet = async (): Promise<WalletResponse> => {
 		}
 
 		const sanitizedWallet = {
-			balance: wallet.balance,
+			balance: wallet.balance
 		};
 
 		return { wallet: sanitizedWallet };

@@ -1,19 +1,20 @@
 'use client';
 
 import NoWalletPage from './Wallet/NoWalletPage';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import isAuth from 'lib/actions/isAuth';
 import getWallet from 'lib/actions/getWallet';
 import lockWallet from 'lib/actions/lockWallet';
 import connectToDatabase from 'lib/actions/connectToDatabase';
+import { useWallet } from 'app/contexts/WalletContext';
 
 const Wallet = () => {
 	const [dbConnected, setDbConnected] = useState(false);
 	const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-	const [isUnlocked, setIsUnlocked] = useState(false);
+	const { isUnlocked, setIsUnlocked } = useWallet();
 	// const [message, setMessage] = useState('');
 	const [balance, setBalance] = useState<number | null>(null);
-	const [error, setError] = useState('');
+	// const [error, setError] = useState('');
 
 	const refreshWalletStatus = () => {
 		setIsUnlocked(true);
@@ -25,7 +26,7 @@ const Wallet = () => {
 		return result.success;
 	};
 
-	const checkAuth = async () => {
+	const checkAuth = useCallback(async () => {
 		setIsCheckingAuth(true);
 		try {
 			const auth = await isAuth();
@@ -36,7 +37,7 @@ const Wallet = () => {
 		} finally {
 			setIsCheckingAuth(false);
 		}
-	};
+	}, [setIsUnlocked]);
 
 	useEffect(() => {
 		checkDb();
@@ -44,7 +45,7 @@ const Wallet = () => {
 		if (dbConnected) {
 			checkAuth();
 		}
-	}, [dbConnected]);
+	}, [dbConnected, checkAuth]);
 
 	useEffect(() => {
 		if (isUnlocked) {
@@ -117,7 +118,7 @@ const Wallet = () => {
 			</div>
 		);
 	} else {
-		return <NoWalletPage onWalletUnlocked={refreshWalletStatus}/>;
+		return <NoWalletPage onWalletUnlocked={refreshWalletStatus} />;
 	}
 };
 

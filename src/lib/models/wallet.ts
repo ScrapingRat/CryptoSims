@@ -16,7 +16,7 @@ interface WalletModel extends mongoose.Model<IWallet> {
 const WalletSchema = new Schema({
 	seedPhrase: { type: String, required: true, unique: true },
 	seedPhraseFingerprint: { type: String, required: false, index: true },
-	balance: { type: Number, required: true, default: 0 },
+	balance: { type: Number, required: true, default: 0 }
 });
 
 WalletSchema.pre<IWallet>('save', async function (next) {
@@ -61,12 +61,13 @@ WalletSchema.statics.findBySeedPhrase = async function (seedPhrase: string) {
 		.digest('hex');
 
 	const potentialWallets = await this.find({
-		seedPhraseFingerprint: fingerprint,
+		seedPhraseFingerprint: fingerprint
 	});
 
 	for (const wallet of potentialWallets) {
 		const isMatch = await wallet.compareSeedPhrase(seedPhrase);
-		if (isMatch) {			return wallet;
+		if (isMatch) {
+			return wallet;
 		}
 	}
 	return null;

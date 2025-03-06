@@ -1,4 +1,4 @@
-import isAuth from "lib/actions/isAuth";
+import isAuth from 'lib/actions/isAuth';
 
 export const checkAuth = async (): Promise<boolean> => {
 	try {

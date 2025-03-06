@@ -15,8 +15,8 @@ const unlockSchema = z.object({
 		.string()
 		.min(1, 'Seed phrase is required')
 		.refine((val) => val.split(' ').length === 12, {
-			message: 'Seed phrase must be exactly 12 words',
-		}),
+			message: 'Seed phrase must be exactly 12 words'
+		})
 });
 
 const unlockWallet = async (formData: FormData) => {
@@ -36,12 +36,12 @@ const unlockWallet = async (formData: FormData) => {
 			{
 				walletId: wallet._id,
 				iat: Math.floor(Date.now() / 1000),
-				jti: crypto.randomUUID(),
+				jti: crypto.randomUUID()
 			},
 			SECRET_KEY,
 			{
 				expiresIn: '1h',
-				algorithm: 'HS256',
+				algorithm: 'HS256'
 			}
 		);
 
@@ -53,7 +53,7 @@ const unlockWallet = async (formData: FormData) => {
 			maxAge: 3600,
 			path: '/',
 			sameSite: 'strict',
-			domain: process.env.DOMAIN,
+			domain: process.env.DOMAIN
 		});
 
 		return { success: true, message: 'Wallet unlocked successfully' };

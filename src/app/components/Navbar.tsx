@@ -1,6 +1,21 @@
+'use client';
+
 import Link from 'next/link';
+import { useWallet } from 'app/contexts/WalletContext';
+import lockWallet from 'lib/actions/lockWallet';
 
 export default function Navbar() {
+	const { isUnlocked, setIsUnlocked } = useWallet();
+
+	const handleLock = async () => {
+		try {
+			await lockWallet();
+			setIsUnlocked(false);
+		} catch (error) {
+			console.error('Failed to lock wallet:', error);
+		}
+	};
+
 	return (
 		<nav className="bg-black fixed w-full z-20 top-0 start-0 border-b border-accent2">
 			<div className="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
@@ -18,6 +33,25 @@ export default function Navbar() {
 						className="text-white bg-background border border-accent2 hover:bg-hover font-semibold rounded-lg text-sm px-4 py-2 text-center">
 						Wallet
 					</Link> */}
+					{isUnlocked && (
+						<button
+							onClick={handleLock}
+							type="button"
+							className="rounded-lg bg-white hover:bg-accent7 p-1 text-black font-semibold flex items-center">
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								viewBox="0 0 24 24"
+								fill="currentColor"
+								className="size-6">
+								<path
+									fillRule="evenodd"
+									d="M12 1.5a5.25 5.25 0 0 0-5.25 5.25v3a3 3 0 0 0-3 3v6.75a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3v-6.75a3 3 0 0 0-3-3v-3c0-2.9-2.35-5.25-5.25-5.25Zm3.75 8.25v-3a3.75 3.75 0 1 0-7.5 0v3h7.5Z"
+									clipRule="evenodd"
+								/>
+							</svg>
+
+						</button>
+					)}
 					<button
 						data-collapse-toggle="navbar-sticky"
 						type="button"

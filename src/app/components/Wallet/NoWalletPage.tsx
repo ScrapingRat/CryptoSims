@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import CreateWalletPage from './CreateWalletPage';
 import UnlockWalletPage from './UnlockWalletPage';
 
@@ -16,8 +16,19 @@ const NoWalletPage = ({ onWalletUnlocked }: NoWalletPageProps) => {
 				Wallet
 			</h1>
 			<div className="w-full max-w-md mx-auto space-y-8">
-				{!isCreating && <UnlockWalletPage isUnlocking={isUnlocking} setIsUnlocking={setIsUnlocking} onWalletUnlocked={onWalletUnlocked}/>}
-				{!isUnlocking && <CreateWalletPage isCreating={isCreating} setIsCreating={setIsCreating}/>}
+				{!isCreating && (
+					<UnlockWalletPage
+						isUnlocking={isUnlocking}
+						setIsUnlocking={setIsUnlocking}
+						onWalletUnlocked={onWalletUnlocked}
+					/>
+				)}
+				{!isUnlocking && (
+					<CreateWalletPage
+						isCreating={isCreating}
+						setIsCreating={setIsCreating}
+					/>
+				)}
 			</div>
 		</>
 	);

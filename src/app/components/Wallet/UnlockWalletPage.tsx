@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import unlockWallet from 'lib/actions/unlockWallet';
+import { useState } from 'react';
+// import unlockWallet from 'lib/actions/unlockWallet';
 
 interface UnlockWalletPageProps {
 	isUnlocking: boolean;
@@ -9,11 +9,11 @@ interface UnlockWalletPageProps {
 	onWalletUnlocked: () => void;
 }
 
-const UnlockWalletPage: React.FC<UnlockWalletPageProps> = ({
+const UnlockWalletPage = ({
 	isUnlocking,
 	setIsUnlocking,
 	onWalletUnlocked
-}) => {
+}: UnlockWalletPageProps) => {
 	const [message, setMessage] = useState('');
 	const [error, setError] = useState('');
 	const [seedPhrase, setSeedPhrase] = useState('');
@@ -24,15 +24,21 @@ const UnlockWalletPage: React.FC<UnlockWalletPageProps> = ({
 		setMessage('');
 
 		try {
-			const formData = new FormData();
-			formData.append('seedPhrase', seedPhrase);
+			const response = await fetch('/api/unlock', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({ seedPhrase }),
+				credentials: 'same-origin'
+			});
 
-			const response = await unlockWallet(formData);
+			const data = await response.json();
 
-			if (response.error) {
-				setError(response.error);
+			if (data.error) {
+				setError(data.error);
 			} else {
-				setMessage(response.message || 'Wallet unlocked successfully!');
+				setMessage(data.message || 'Wallet unlocked successfully!');
 				setSeedPhrase('');
 				setIsUnlocking(false);
 				if (onWalletUnlocked) {

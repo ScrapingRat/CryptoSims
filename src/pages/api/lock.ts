@@ -1,5 +1,3 @@
-'use server';
-
 import { cookies } from 'next/headers';
 
 const lockWallet = async (): Promise<boolean> => {
@@ -20,3 +18,4 @@ const lockWallet = async (): Promise<boolean> => {
 };
 
 export default lockWallet;
+

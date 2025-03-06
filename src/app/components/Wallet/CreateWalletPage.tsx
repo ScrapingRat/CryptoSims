@@ -8,10 +8,10 @@ interface CreateWalletPageProps {
 	setIsCreating: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const CreateWalletPage: React.FC<CreateWalletPageProps> = ({
+const CreateWalletPage = ({
 	isCreating,
 	setIsCreating
-}) => {
+}: CreateWalletPageProps) => {
 	const [isLoading, setIsLoading] = useState(false);
 	const [seedPhrase, setSeedPhrase] = useState('');
 	const [error, setError] = useState('');
