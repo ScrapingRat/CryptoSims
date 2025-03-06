@@ -48,7 +48,7 @@ export default async function handler(
 
 		const wallet = await Wallet.findBySeedPhrase(seedPhrase);
 		if (!wallet) {
-			return res.status(401).json({ error: 'Authentiucation failed' });
+			return res.status(401).json({ error: 'Authentication failed' });
 		}
 
 		const token = jwt.sign(
