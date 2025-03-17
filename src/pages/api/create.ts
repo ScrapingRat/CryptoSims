@@ -1,7 +1,9 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import * as bip39 from 'bip39';
+import { ZodError } from 'zod';
 import Wallet from '@models/wallet';
-import connectToDatabase from 'lib/actions/connectToDatabase';
+import connectToDatabase from '@actions/connectToDatabase';
+import { postMethodSchema } from '@schemas/methodSchema';
 
 const ROUTE_ENABLED = true;
 
@@ -16,12 +18,23 @@ export default async function handler(
 	if (!ROUTE_ENABLED) {
 		return res
 			.status(503)
-			.json({ error: 'This API endpoint is temporarily disabled' });
+			.json({ error: 'This endpoint is temporarily disabled' });
 	}
 
 	await connectToDatabase();
 
 	try {
+		const methodValidation = postMethodSchema.safeParse({
+			method: req.method
+		});
+
+		if (!methodValidation.success) {
+			return res.status(405).json({
+				error: 'Method not allowed',
+				message: 'This endpoint only accepts POST requests'
+			});
+		}
+
 		let seedPhrase: string = bip39.generateMnemonic(128);
 		let existingWallet = await Wallet.findBySeedPhrase(seedPhrase);
 
@@ -34,10 +47,14 @@ export default async function handler(
 			balance: generateRandomInteger(0, 1000)
 		});
 		await wallet.save();
-
+		res.setHeader('Content-Type', 'application/json');
 		res.status(200).json({ seedPhrase, balance: wallet.balance });
 	} catch (error) {
-		console.error(error);
 		res.status(500).json({ error: 'Failed to create new wallet' });
+		if (error instanceof ZodError) {
+			console.error('Validation error:', error.issues);
+		} else {
+			console.error(error);
+		}
 	}
 }

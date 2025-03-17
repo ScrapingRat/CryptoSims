@@ -1,32 +1,14 @@
 import { NextApiRequest, NextApiResponse } from 'next';
+import { ZodError } from 'zod';
 import jwt from 'jsonwebtoken';
-import Wallet from '@models/wallet';
-import connectToDatabase from 'lib/actions/connectToDatabase';
 import getConfig from 'lib/getConfig';
-import { z } from 'zod';
-import { wordlists } from 'bip39';
-import sanitize from 'sanitize-html';
+import connectToDatabase from '@actions/connectToDatabase';
+import Wallet from '@models/wallet';
+import { postMethodSchema } from '@schemas/methodSchema';
+import seedBodySchema from '@schemas/seedBodySchema';
 
 const { SECRET_KEY } = getConfig();
 const ROUTE_ENABLED = true;
-
-const unlockSchema = z.object({
-	seedPhrase: z
-		.string()
-		.min(1, 'Seed phrase is required')
-		.refine((val) => val.split(' ').length === 12, {
-			message: 'Seed phrase must be exactly 12 words'
-		})
-		.refine(
-			(val) =>
-				val
-					.split(' ')
-					.every((word) => wordlists.english.includes(word)),
-			{
-				message: 'Seed phrase contains invalid words'
-			}
-		)
-});
 
 export default async function handler(
 	req: NextApiRequest,
@@ -35,18 +17,36 @@ export default async function handler(
 	if (!ROUTE_ENABLED) {
 		return res
 			.status(503)
-			.json({ error: 'This API endpoint is temporarily disabled' });
+			.json({ error: 'This endpoint is temporarily disabled' });
 	}
 
 	await connectToDatabase();
 
 	try {
-		const sanitizedBody = {
-			seedPhrase: sanitize(req.body.seedPhrase)
-		};
-		const { seedPhrase } = unlockSchema.parse(sanitizedBody);
+		const methodValidation = postMethodSchema.safeParse({
+			method: req.method
+		});
+
+		if (!methodValidation.success) {
+			return res.status(405).json({
+				error: 'Method not allowed',
+				message: 'This endpoint only accepts POST requests'
+			});
+		}
+
+		const bodyValidation = seedBodySchema.safeParse(req.body);
+
+		if (!bodyValidation.success) {
+			return res.status(400).json({
+				error: 'Invalid request',
+				message: bodyValidation.error.issues[0].message
+			});
+		}
+
+		const { seedPhrase } = bodyValidation.data;
 
 		const wallet = await Wallet.findBySeedPhrase(seedPhrase);
+
 		if (!wallet) {
 			return res.status(401).json({ error: 'Authentication failed' });
 		}
@@ -70,7 +70,7 @@ export default async function handler(
 		res.status(200).json({ message: 'Authentication successful' });
 	} catch (error) {
 		res.status(401).json({ error: 'Authentication failed' });
-		if (error instanceof z.ZodError) {
+		if (error instanceof ZodError) {
 			console.error('Validation error:', error.issues);
 		} else {
 			console.error('Authentication error:', error);

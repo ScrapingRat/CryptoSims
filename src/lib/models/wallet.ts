@@ -28,8 +28,13 @@ WalletSchema.pre<IWallet>('save', async function (next) {
 			.digest('hex');
 		this.seedPhraseFingerprint = fingerprint;
 
+		const hash = crypto
+			.createHash('sha256')
+			.update(this.seedPhrase)
+			.digest('hex');
+
 		const salt = await bcrypt.genSalt(10);
-		this.seedPhrase = await bcrypt.hash(this.seedPhrase, salt);
+		this.seedPhrase = await bcrypt.hash(hash, salt);
 	}
 	next();
 });
@@ -39,11 +44,6 @@ WalletSchema.methods.compareSeedPhrase = async function (
 ) {
 	if (!this.seedPhrase || typeof this.seedPhrase !== 'string') {
 		throw new Error('Seed phrase is undefined');
-	}
-
-	const words = candidateSeedPhrase.trim().split(/\s+/);
-	if (words.length !== 12) {
-		return false;
 	}
 
 	return bcrypt.compare(candidateSeedPhrase, this.seedPhrase);
@@ -60,12 +60,17 @@ WalletSchema.statics.findBySeedPhrase = async function (seedPhrase: string) {
 		.update(words.slice(0, 4).join(' '))
 		.digest('hex');
 
+	const hash = crypto
+		.createHash('sha256')
+		.update(seedPhrase)
+		.digest('hex');
+
 	const potentialWallets = await this.find({
 		seedPhraseFingerprint: fingerprint
 	});
 
 	for (const wallet of potentialWallets) {
-		const isMatch = await wallet.compareSeedPhrase(seedPhrase);
+		const isMatch = await wallet.compareSeedPhrase(hash);
 		if (isMatch) {
 			return wallet;
 		}
