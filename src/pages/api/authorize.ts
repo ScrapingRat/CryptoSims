@@ -1,10 +1,11 @@
 import { NextApiRequest, NextApiResponse } from 'next';
+import jwt from 'jsonwebtoken';
 import { ZodError } from 'zod';
 import connectToDatabase from '@actions/connectToDatabase';
-import Wallet from '@models/wallet';
-import { authorizeToken } from 'lib/authorizeToken';
 import { getMethodSchema } from '@schemas/methodSchema';
+import { authorizeToken } from 'lib/authorizeToken';
 
+// const { SECRET_KEY } = getConfig();
 const ROUTE_ENABLED = true;
 
 export default async function handler(
@@ -16,6 +17,8 @@ export default async function handler(
 			.status(503)
 			.json({ error: 'This endpoint is temporarily disabled' });
 	}
+
+	await connectToDatabase();
 
 	try {
 		const methodValidation = getMethodSchema.safeParse({
@@ -29,28 +32,30 @@ export default async function handler(
 			});
 		}
 
-		await connectToDatabase();
-
 		const auth = await authorizeToken(req);
 
 		if (!auth.isAuthorized) {
-			return res.status(401).json({ error: auth.error });
+			return res.status(401).json({
+				isAuthorized: auth.isAuthorized,
+				error: auth.error
+			});
 		}
 
-		const walletId = auth.walletId;
-		const wallet = await Wallet.findById(walletId);
-
-		if (!wallet) {
-			return res.status(401).json({ error: 'Wallet not found' });
-		}
-
-		return res.status(200).json({ balance: wallet.balance });
+		return res.status(200).json({
+			isAuthorized: auth.isAuthorized,
+			message: 'Authentication successful'
+		});
 	} catch (error) {
-		res.status(401).json({ error: 'Authentication failed' });
-		if (error instanceof ZodError) {
+		if (error instanceof jwt.JsonWebTokenError) {
+			return res.status(401).json({ error: 'Invalid token format' });
+		} else if (error instanceof jwt.TokenExpiredError) {
+			return res.status(401).json({ error: 'Token expired' });
+		} else if (error instanceof ZodError) {
 			console.error('Validation error:', error.issues);
+			return res.status(400).json({ error: 'Invalid request format' });
 		} else {
 			console.error('Authentication error:', error);
+			return res.status(500).json({ error: 'Internal server error' });
 		}
 	}
 }

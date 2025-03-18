@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { ZodError } from 'zod';
 import jwt from 'jsonwebtoken';
+import { serialize } from 'cookie';
 import getConfig from 'lib/getConfig';
 import connectToDatabase from '@actions/connectToDatabase';
 import Wallet from '@models/wallet';
@@ -9,6 +10,9 @@ import seedBodySchema from '@schemas/seedBodySchema';
 
 const { SECRET_KEY } = getConfig();
 const ROUTE_ENABLED = true;
+
+const ACCESS_TOKEN_EXPIRY = 15 * 60;
+const REFRESH_TOKEN_EXPIRY = 7 * 24 * 60 * 60;
 
 export default async function handler(
 	req: NextApiRequest,
@@ -45,29 +49,77 @@ export default async function handler(
 
 		const { seedPhrase } = bodyValidation.data;
 
-		const wallet = await Wallet.findBySeedPhrase(seedPhrase);
+		const wallet = (await Wallet.findBySeedPhrase(seedPhrase)) as {
+			_id: string;
+		} | null;
 
 		if (!wallet) {
 			return res.status(401).json({ error: 'Authentication failed' });
 		}
 
-		const token = jwt.sign(
+		const now = Math.floor(Date.now() / 1000);
+
+		const accessToken = jwt.sign(
 			{
 				walletId: wallet._id,
-				iat: Math.floor(Date.now() / 1000),
-				jti: crypto.randomUUID()
+				type: 'access',
+				iat: now,
+				nbf: now,
+				exp: now + ACCESS_TOKEN_EXPIRY,
+				jti: crypto.randomUUID(),
+				iss: process.env.JWT_ISSUER || 'cryptosims',
+				sub: wallet._id.toString()
 			},
 			SECRET_KEY,
 			{
-				expiresIn: '1h',
 				algorithm: 'HS256'
 			}
 		);
-		res.setHeader(
-			'Set-Cookie',
-			`token=${token}; HttpOnly; Secure; Path=/; Max-Age=3600; SameSite=Strict; Domain=${process.env.DOMAIN}`
+
+		const refreshToken = jwt.sign(
+			{
+				walletId: wallet._id,
+				type: 'refresh',
+				iat: now,
+				nbf: now,
+				exp: now + REFRESH_TOKEN_EXPIRY,
+				jti: crypto.randomUUID(),
+				iss: process.env.JWT_ISSUER || 'cryptosims',
+				sub: wallet._id.toString()
+			},
+			SECRET_KEY,
+			{
+				algorithm: 'HS256'
+			}
 		);
-		res.status(200).json({ message: 'Authentication successful' });
+
+		const accessCookieOptions = {
+			httpOnly: true,
+			secure: process.env.NODE_ENV === 'production',
+			sameSite: 'strict' as const,
+			path: '/',
+			maxAge: ACCESS_TOKEN_EXPIRY
+		};
+		console.log(accessCookieOptions);
+
+		const refreshCookieOptions = {
+			httpOnly: true,
+			secure: process.env.NODE_ENV === 'production',
+			sameSite: 'strict' as const,
+			path: '/api/refresh',
+			maxAge: REFRESH_TOKEN_EXPIRY
+		};
+		console.log(refreshCookieOptions);
+
+		res.setHeader('Set-Cookie', [
+			serialize('token', accessToken, accessCookieOptions),
+			serialize('refresh_token', refreshToken, refreshCookieOptions)
+		]);
+
+		return res.status(200).json({
+			message: 'Authentication successful',
+			expiresIn: ACCESS_TOKEN_EXPIRY
+		});
 	} catch (error) {
 		res.status(401).json({ error: 'Authentication failed' });
 		if (error instanceof ZodError) {

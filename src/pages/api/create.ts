@@ -42,15 +42,18 @@ export default async function handler(
 			seedPhrase = bip39.generateMnemonic(128);
 			existingWallet = await Wallet.findBySeedPhrase(seedPhrase);
 		}
+
 		const wallet = new Wallet({
 			seedPhrase,
 			balance: generateRandomInteger(0, 1000)
 		});
+
 		await wallet.save();
 		res.setHeader('Content-Type', 'application/json');
 		res.status(200).json({ seedPhrase, balance: wallet.balance });
 	} catch (error) {
 		res.status(500).json({ error: 'Failed to create new wallet' });
+
 		if (error instanceof ZodError) {
 			console.error('Validation error:', error.issues);
 		} else {

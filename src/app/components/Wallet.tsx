@@ -2,9 +2,7 @@
 
 import NoWalletPage from './Wallet/NoWalletPage';
 import { useEffect, useState, useCallback } from 'react';
-import isAuth from 'lib/actions/isAuth';
 import getWallet from 'lib/actions/getWallet';
-import lockWallet from 'lib/actions/lockWallet';
 import connectToDatabase from 'lib/actions/connectToDatabase';
 import { useWallet } from 'app/contexts/WalletContext';
 
@@ -29,7 +27,7 @@ const Wallet = () => {
 	const checkAuth = useCallback(async () => {
 		setIsCheckingAuth(true);
 		try {
-			const auth = await isAuth();
+			const auth = await handleAuth();
 			setIsUnlocked(auth);
 		} catch (error) {
 			console.error('Failed to check authentication:', error);
@@ -71,6 +69,40 @@ const Wallet = () => {
 		}
 	};
 
+	const handleLock = async () => {
+		try {
+			const response = await fetch('/api/lock', {
+				method: 'DELETE',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				credentials: 'same-origin'
+			});
+			const data = await response.json();
+			if (!data.error) {
+				setIsUnlocked(false);
+			}
+		} catch (error) {
+			console.error('Failed to lock wallet:', error);
+		}
+	};
+
+	const handleAuth = async () => {
+		try {
+			const response = await fetch('/api/authorize', {
+				method: 'GET',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				credentials: 'same-origin'
+			});
+			const data = await response.json();
+			return data.isAuthorized;
+		} catch (error) {
+			console.error(error);
+		}
+	};
+
 	if (!dbConnected) {
 		return <p>Establishing connection to the database...</p>;
 	} else if (isCheckingAuth) {
@@ -94,16 +126,7 @@ const Wallet = () => {
 
 							<div className="flex justify-end mt-6">
 								<button
-									onClick={() => {
-										setIsUnlocked(false);
-										lockWallet().catch((error) => {
-											console.error(
-												'Failed to lock wallet:',
-												error
-											);
-											setIsUnlocked(true);
-										});
-									}}
+									onClick={handleLock}
 									className="py-2 px-4 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors">
 									Lock Wallet
 								</button>

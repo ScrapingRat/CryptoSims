@@ -4,7 +4,8 @@ import { wordlists } from 'bip39';
 const seedBodySchema = z.object({
 	seedPhrase: z
 		.string({
-			required_error: 'Seed phrase is required',
+			required_error:
+				'Seed phrase is required (expecting content-type to be application/json)',
 			invalid_type_error: 'Seed phrase must be a string'
 		})
 		.min(1, 'Seed phrase cannot be empty')

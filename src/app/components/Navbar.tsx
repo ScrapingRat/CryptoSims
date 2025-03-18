@@ -2,15 +2,23 @@
 
 import Link from 'next/link';
 import { useWallet } from 'app/contexts/WalletContext';
-import lockWallet from 'lib/actions/lockWallet';
 
 export default function Navbar() {
 	const { isUnlocked, setIsUnlocked } = useWallet();
 
 	const handleLock = async () => {
 		try {
-			await lockWallet();
-			setIsUnlocked(false);
+			const response = await fetch('/api/lock', {
+				method: 'DELETE',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				credentials: 'same-origin'
+			});
+			const data = await response.json();
+			if (!data.error) {
+				setIsUnlocked(false);
+			}
 		} catch (error) {
 			console.error('Failed to lock wallet:', error);
 		}
@@ -49,7 +57,6 @@ export default function Navbar() {
 									clipRule="evenodd"
 								/>
 							</svg>
-
 						</button>
 					)}
 					<button

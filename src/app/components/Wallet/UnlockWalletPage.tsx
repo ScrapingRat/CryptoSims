@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-// import unlockWallet from 'lib/actions/unlockWallet';
 
 interface UnlockWalletPageProps {
 	isUnlocking: boolean;

@@ -1,10 +1,9 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { ZodError } from 'zod';
-import jwt from 'jsonwebtoken';
-import getConfig from 'lib/getConfig';
-import lockWalletSchema from '@schemas/lockWalletSchema';
+import { serialize } from 'cookie';
+import { deleteMethodSchema } from '@schemas/methodSchema';
+import { accessTokenSchema } from '@schemas/tokenSchema';
 
-const { SECRET_KEY } = getConfig();
 const ROUTE_ENABLED = true;
 
 export default async function handler(
@@ -19,34 +18,37 @@ export default async function handler(
 	}
 
 	try {
-		const validationResult = lockWalletSchema.safeParse({
-			method: req.method,
-			cookies: req.cookies
+		const methodValidation = deleteMethodSchema.safeParse({
+			method: req.method
 		});
 
-		if (!validationResult.success) {
-			if (
-				validationResult.error.issues.some((issue) =>
-					issue.path.includes('method')
-				)
-			) {
-				return res.status(405).json({
-					error: 'Method not allowed',
-					message: 'This endpoint only accepts DELETE requests'
-				});
-			}
-
-			return res.status(401).json({
-				error: 'Authentication required',
-				message: 'Valid authentication token cookie is required'
+		if (!methodValidation.success) {
+			return res.status(405).json({
+				error: 'Method not allowed',
+				message: 'This endpoint only accepts DELETE requests'
 			});
 		}
 
-		const { token } = validationResult.data.cookies;
+		const cookieOptions = {
+			httpOnly: true,
+			secure: process.env.NODE_ENV === 'production',
+			sameSite: 'strict' as const,
+			path: '/',
+			expires: new Date(0),
+			maxAge: 0
+		};
 
-		const decoded = jwt.verify(token, SECRET_KEY) as { walletId: string };
-		if (!decoded.walletId) {
-			return res.status(401).json({ error: 'Failed to lock wallet' });
+		res.setHeader('Set-Cookie', serialize('token', '', cookieOptions));
+
+		const validationResult = accessTokenSchema.safeParse({
+			token: req.cookies.token
+		});
+
+		if (!validationResult.success) {
+			return res.status(401).json({
+				// error: 'Authentication required',
+				message: 'Valid authentication token cookie is required'
+			});
 		}
 
 		return res.status(200).json({ message: 'Wallet locked successfully' });
