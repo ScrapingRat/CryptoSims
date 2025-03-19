@@ -11,7 +11,8 @@ import seedBodySchema from '@schemas/seedBodySchema';
 const { SECRET_KEY } = getConfig();
 const ROUTE_ENABLED = true;
 
-const ACCESS_TOKEN_EXPIRY = 15 * 60;
+const ACCESS_TOKEN_EXPIRY = 10;
+// const ACCESS_TOKEN_EXPIRY = 15 * 60;
 const REFRESH_TOKEN_EXPIRY = 7 * 24 * 60 * 60;
 
 export default async function handler(
@@ -100,7 +101,6 @@ export default async function handler(
 			path: '/',
 			maxAge: ACCESS_TOKEN_EXPIRY
 		};
-		console.log(accessCookieOptions);
 
 		const refreshCookieOptions = {
 			httpOnly: true,
@@ -109,7 +109,6 @@ export default async function handler(
 			path: '/api/refresh',
 			maxAge: REFRESH_TOKEN_EXPIRY
 		};
-		console.log(refreshCookieOptions);
 
 		res.setHeader('Set-Cookie', [
 			serialize('token', accessToken, accessCookieOptions),

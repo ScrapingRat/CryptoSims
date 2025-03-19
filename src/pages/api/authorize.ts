@@ -43,7 +43,8 @@ export default async function handler(
 
 		return res.status(200).json({
 			isAuthorized: auth.isAuthorized,
-			message: 'Authentication successful'
+			message: 'Authentication successful',
+			walletId: auth.walletId
 		});
 	} catch (error) {
 		if (error instanceof jwt.JsonWebTokenError) {

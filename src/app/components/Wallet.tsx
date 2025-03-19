@@ -2,9 +2,9 @@
 
 import NoWalletPage from './Wallet/NoWalletPage';
 import { useEffect, useState, useCallback } from 'react';
-import getWallet from 'lib/actions/getWallet';
 import connectToDatabase from 'lib/actions/connectToDatabase';
 import { useWallet } from 'app/contexts/WalletContext';
+import refreshAccessToken from './refreshAccessToken';
 
 const Wallet = () => {
 	const [dbConnected, setDbConnected] = useState(false);
@@ -13,6 +13,63 @@ const Wallet = () => {
 	// const [message, setMessage] = useState('');
 	const [balance, setBalance] = useState<number | null>(null);
 	// const [error, setError] = useState('');
+
+	// const fetchWallet = useCallback(async () => {
+	// 	try {
+	// 		interface WalletResponse {
+	// 			balance: number;
+	// 		}
+
+	// 		const { data, error, refreshed, status } = await apiWithRefresh<WalletResponse>('api/getWallet');
+
+	// 		if (refreshed) {
+	// 			console.log('Token was refreshed during wallet fetch');
+	// 		}
+
+	// 		if (error) {
+	// 			console.error('Error fetching wallet:', error);
+
+	// 			if (status === 401) {
+	// 				setIsUnlocked(false);
+	// 			}
+
+	// 			return;
+	// 		}
+
+	// 		if (data) {
+	// 			setBalance(data.balance);
+	// 		}
+
+	// 	} catch (unexpectedError) {
+	// 		console.error('Unexpected error in fetchWallet:', unexpectedError);
+	// 	}
+	// }, [setBalance, setIsUnlocked]);
+
+	const fetchWallet = useCallback(async () => {
+		try {
+			const response = await fetch('/api/getWallet', {
+				method: 'GET',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				credentials: 'same-origin'
+			});
+			const data = await response.json();
+
+			if (data.error) {
+				await refreshAccessToken();
+				await fetchWallet();
+				return;
+			}
+
+			if (data.balance) {
+				setBalance(data.balance);
+			}
+		} catch (error) {
+			// setError('Failed to fetch wallet balance');
+			console.error(error);
+		}
+	}, [setBalance]);
 
 	const refreshWalletStatus = () => {
 		setIsUnlocked(true);
@@ -49,25 +106,7 @@ const Wallet = () => {
 		if (isUnlocked) {
 			fetchWallet();
 		}
-	}, [isUnlocked]);
-
-	const fetchWallet = async () => {
-		try {
-			const result = await getWallet();
-
-			if (result.error) {
-				console.error(result.error);
-				return;
-			}
-
-			if (result.wallet) {
-				setBalance(result.wallet.balance);
-			}
-		} catch (error) {
-			// setError('Failed to fetch wallet balance');
-			console.error(error);
-		}
-	};
+	}, [isUnlocked, fetchWallet]);
 
 	const handleLock = async () => {
 		try {
@@ -129,6 +168,13 @@ const Wallet = () => {
 									onClick={handleLock}
 									className="py-2 px-4 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors">
 									Lock Wallet
+								</button>
+							</div>
+							<div className="flex justify-end mt-6">
+								<button
+									onClick={fetchWallet}
+									className="py-2 px-4 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors">
+									Fetch Wallet
 								</button>
 							</div>
 						</div>

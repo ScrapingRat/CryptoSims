@@ -28,8 +28,21 @@ export default async function handler(
 			});
 		}
 
+		let refreshToken = req.cookies.refresh_token;
+
+		if (!refreshToken && req.body && req.body.refresh_token) {
+			refreshToken = req.body.refresh_token;
+		}
+
+		if (!refreshToken) {
+			return res.status(401).json({
+				error: 'No refresh token provided',
+				message: 'Please provide a refresh token'
+			});
+		}
+
 		const tokenValidation = refreshTokenSchema.safeParse({
-			refresh_token: req.cookies.refresh_token
+			refresh_token: refreshToken
 		});
 
 		if (!tokenValidation.success) {
