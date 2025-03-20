@@ -33,17 +33,6 @@ export default async function handler(
 
 		const auth = await authorizeToken(req);
 
-		// const baseUrl = 'http://localhost:3000';
-		// const response = await fetch(`${baseUrl}/api/authorize`, {
-		// 	method: 'GET',
-		// 	headers: {
-		// 		'Content-Type': 'application/json',
-		// 		'Cookie': req.headers.cookie || ''
-		// 	},
-		// 	credentials: 'same-origin'
-		// });
-		// const auth = await response.json();
-
 		if (!auth.isAuthorized) {
 			return res.status(401).json({ error: auth.error });
 		}

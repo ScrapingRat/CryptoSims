@@ -2,9 +2,10 @@
 
 import NoWalletPage from './Wallet/NoWalletPage';
 import { useEffect, useState, useCallback } from 'react';
+import { getCookie } from 'cookies-next';
 import connectToDatabase from 'lib/actions/connectToDatabase';
 import { useWallet } from 'app/contexts/WalletContext';
-import refreshAccessToken from './refreshAccessToken';
+import apiClient from 'lib/apiClient';
 
 const Wallet = () => {
 	const [dbConnected, setDbConnected] = useState(false);
@@ -14,62 +15,36 @@ const Wallet = () => {
 	const [balance, setBalance] = useState<number | null>(null);
 	// const [error, setError] = useState('');
 
-	// const fetchWallet = useCallback(async () => {
-	// 	try {
-	// 		interface WalletResponse {
-	// 			balance: number;
-	// 		}
-
-	// 		const { data, error, refreshed, status } = await apiWithRefresh<WalletResponse>('api/getWallet');
-
-	// 		if (refreshed) {
-	// 			console.log('Token was refreshed during wallet fetch');
-	// 		}
-
-	// 		if (error) {
-	// 			console.error('Error fetching wallet:', error);
-
-	// 			if (status === 401) {
-	// 				setIsUnlocked(false);
-	// 			}
-
-	// 			return;
-	// 		}
-
-	// 		if (data) {
-	// 			setBalance(data.balance);
-	// 		}
-
-	// 	} catch (unexpectedError) {
-	// 		console.error('Unexpected error in fetchWallet:', unexpectedError);
-	// 	}
-	// }, [setBalance, setIsUnlocked]);
-
 	const fetchWallet = useCallback(async () => {
 		try {
-			const response = await fetch('/api/getWallet', {
-				method: 'GET',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				credentials: 'same-origin'
-			});
-			const data = await response.json();
+			interface WalletResponse {
+				balance: number;
+			}
 
-			if (data.error) {
-				await refreshAccessToken();
-				await fetchWallet();
+			const { data, error, refreshed, status } =
+				await apiClient<WalletResponse>('api/getWallet');
+
+			if (refreshed) {
+				console.log('Token was refreshed during wallet fetch');
+			}
+
+			if (error) {
+				console.error('Error fetching wallet:', error);
+
+				if (status === 401) {
+					setIsUnlocked(false);
+				}
+
 				return;
 			}
 
-			if (data.balance) {
+			if (data) {
 				setBalance(data.balance);
 			}
-		} catch (error) {
-			// setError('Failed to fetch wallet balance');
-			console.error(error);
+		} catch (unexpectedError) {
+			console.error('Unexpected error in fetchWallet:', unexpectedError);
 		}
-	}, [setBalance]);
+	}, [setBalance, setIsUnlocked]);
 
 	const refreshWalletStatus = () => {
 		setIsUnlocked(true);
@@ -85,7 +60,7 @@ const Wallet = () => {
 		setIsCheckingAuth(true);
 		try {
 			const auth = await handleAuth();
-			setIsUnlocked(auth);
+			setIsUnlocked(auth || false);
 		} catch (error) {
 			console.error('Failed to check authentication:', error);
 			setIsUnlocked(false);
@@ -110,16 +85,19 @@ const Wallet = () => {
 
 	const handleLock = async () => {
 		try {
-			const response = await fetch('/api/lock', {
-				method: 'DELETE',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				credentials: 'same-origin'
-			});
-			const data = await response.json();
-			if (!data.error) {
+			interface LockResponse {
+				message: string;
+			}
+			const { data, error, errorMessage } = await apiClient<LockResponse>(
+				'api/lock',
+				'DELETE'
+			);
+
+			if (!error) {
+				console.log(data?.message);
 				setIsUnlocked(false);
+			} else {
+				console.log(errorMessage);
 			}
 		} catch (error) {
 			console.error('Failed to lock wallet:', error);
@@ -128,15 +106,22 @@ const Wallet = () => {
 
 	const handleAuth = async () => {
 		try {
-			const response = await fetch('/api/authorize', {
-				method: 'GET',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				credentials: 'same-origin'
-			});
-			const data = await response.json();
-			return data.isAuthorized;
+			const unlocked_before = getCookie('unlocked_before');
+			const hasUnlockedBefore = unlocked_before !== undefined;
+
+			interface AuthResponse {
+				isAuthorized: boolean;
+			}
+
+			const { data } = await apiClient<AuthResponse>(
+				'api/authorize',
+				'GET',
+				{
+					auth: hasUnlockedBefore
+				}
+			);
+
+			return data?.isAuthorized || false;
 		} catch (error) {
 			console.error(error);
 		}

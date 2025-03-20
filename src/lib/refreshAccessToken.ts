@@ -1,3 +1,5 @@
+// import apiClient from './apiClient';
+
 interface RefreshResult {
 	success: boolean;
 	message?: string;
@@ -14,6 +16,17 @@ const refreshAccessToken = async (): Promise<RefreshResult> => {
 				'Content-Type': 'application/json'
 			}
 		});
+
+		// interface RefreshResponse {
+		// 	message: string;
+		// }
+		// const { data, error, errorMessage } = await apiClient<RefreshResponse>(
+		// 	'api/refresh',
+		// 	'POST',
+		// 	{
+		// 		auth: true,
+		// 	}
+		// );
 
 		const data = await response.json();
 

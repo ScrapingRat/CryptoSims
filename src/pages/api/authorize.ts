@@ -5,7 +5,6 @@ import connectToDatabase from '@actions/connectToDatabase';
 import { getMethodSchema } from '@schemas/methodSchema';
 import { authorizeToken } from 'lib/authorizeToken';
 
-// const { SECRET_KEY } = getConfig();
 const ROUTE_ENABLED = true;
 
 export default async function handler(
@@ -44,7 +43,6 @@ export default async function handler(
 		return res.status(200).json({
 			isAuthorized: auth.isAuthorized,
 			message: 'Authentication successful',
-			walletId: auth.walletId
 		});
 	} catch (error) {
 		if (error instanceof jwt.JsonWebTokenError) {

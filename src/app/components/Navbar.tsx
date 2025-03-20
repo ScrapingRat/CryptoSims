@@ -2,22 +2,26 @@
 
 import Link from 'next/link';
 import { useWallet } from 'app/contexts/WalletContext';
+import apiClient from 'lib/apiClient';
 
 export default function Navbar() {
 	const { isUnlocked, setIsUnlocked } = useWallet();
 
 	const handleLock = async () => {
 		try {
-			const response = await fetch('/api/lock', {
-				method: 'DELETE',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				credentials: 'same-origin'
-			});
-			const data = await response.json();
-			if (!data.error) {
+			interface LockResponse {
+				message: string;
+			}
+			const { data, error, errorMessage } = await apiClient<LockResponse>(
+				'api/lock',
+				'DELETE'
+			);
+
+			if (!error) {
+				console.log(data?.message);
 				setIsUnlocked(false);
+			} else {
+				console.log(errorMessage);
 			}
 		} catch (error) {
 			console.error('Failed to lock wallet:', error);

@@ -7,8 +7,9 @@ import connectToDatabase from '@actions/connectToDatabase';
 import Wallet from '@models/wallet';
 import { postMethodSchema } from '@schemas/methodSchema';
 import seedBodySchema from '@schemas/seedBodySchema';
+// import refreshAccessToken from 'lib/refreshAccessToken';
 
-const { SECRET_KEY } = getConfig();
+const { SECRET_KEY, SECRET_KEY_REFRESH } = getConfig();
 const ROUTE_ENABLED = true;
 
 const ACCESS_TOKEN_EXPIRY = 10;
@@ -38,6 +39,9 @@ export default async function handler(
 				message: 'This endpoint only accepts POST requests'
 			});
 		}
+
+		// const refresh = await refreshAccessToken(req);
+
 
 		const bodyValidation = seedBodySchema.safeParse(req.body);
 
@@ -88,7 +92,7 @@ export default async function handler(
 				iss: process.env.JWT_ISSUER || 'cryptosims',
 				sub: wallet._id.toString()
 			},
-			SECRET_KEY,
+			SECRET_KEY_REFRESH,
 			{
 				algorithm: 'HS256'
 			}
@@ -110,9 +114,18 @@ export default async function handler(
 			maxAge: REFRESH_TOKEN_EXPIRY
 		};
 
+		const visitedCookieOptions = {
+			httpOnly: false,
+			secure: process.env.NODE_ENV === 'production',
+			sameSite: 'strict' as const,
+			path: '/',
+			maxAge: REFRESH_TOKEN_EXPIRY
+		}
+
 		res.setHeader('Set-Cookie', [
 			serialize('token', accessToken, accessCookieOptions),
-			serialize('refresh_token', refreshToken, refreshCookieOptions)
+			serialize('refresh_token', refreshToken, refreshCookieOptions),
+			serialize('unlocked_before', '', visitedCookieOptions)
 		]);
 
 		return res.status(200).json({

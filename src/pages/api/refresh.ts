@@ -8,7 +8,9 @@ import {
 	typeRefreshTokenSchema
 } from '@schemas/tokenSchema';
 import crypto from 'crypto';
+import connectToDatabase from '@actions/connectToDatabase';
 
+const ROUTE_ENABLED = true;
 const { SECRET_KEY } = getConfig();
 const ACCESS_TOKEN_EXPIRY = 15 * 60;
 
@@ -16,6 +18,14 @@ export default async function handler(
 	req: NextApiRequest,
 	res: NextApiResponse
 ) {
+	if (!ROUTE_ENABLED) {
+		return res
+			.status(503)
+			.json({ error: 'This endpoint is temporarily disabled' });
+	}
+
+	await connectToDatabase();
+
 	try {
 		const methodValidation = postMethodSchema.safeParse({
 			method: req.method

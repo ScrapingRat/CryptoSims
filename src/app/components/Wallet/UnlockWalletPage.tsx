@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import apiClient from 'lib/apiClient';
 
 interface UnlockWalletPageProps {
 	isUnlocking: boolean;
@@ -23,26 +24,25 @@ const UnlockWalletPage = ({
 		setMessage('');
 
 		try {
-			const response = await fetch('/api/unlock', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({ seedPhrase }),
-				credentials: 'same-origin'
-			});
+			interface UnlockResponse {
+				message: string;
+				expiresIn?: number;
+			}
 
-			const data = await response.json();
+			const { data, error, errorMessage } =
+				await apiClient<UnlockResponse>('api/unlock', 'POST', {
+					body: JSON.stringify({ seedPhrase })
+				});
 
-			if (data.error) {
-				setError(data.error);
-			} else {
-				setMessage(data.message || 'Wallet unlocked successfully!');
-				setSeedPhrase('');
-				setIsUnlocking(false);
-				if (onWalletUnlocked) {
-					onWalletUnlocked();
-				}
+			if (error) {
+				setError(errorMessage || error);
+				return;
+			}
+			setMessage(data?.message || 'Wallet unlocked successfully!');
+			setSeedPhrase('');
+			setIsUnlocking(false);
+			if (onWalletUnlocked) {
+				onWalletUnlocked();
 			}
 		} catch (err) {
 			setError('An unexpected error occurred');

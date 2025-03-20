@@ -2,7 +2,6 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { ZodError } from 'zod';
 import { serialize } from 'cookie';
 import { deleteMethodSchema } from '@schemas/methodSchema';
-import { accessTokenSchema } from '@schemas/tokenSchema';
 
 const ROUTE_ENABLED = true;
 
@@ -29,7 +28,7 @@ export default async function handler(
 			});
 		}
 
-		const cookieOptions = {
+		const accessCookieOptions = {
 			httpOnly: true,
 			secure: process.env.NODE_ENV === 'production',
 			sameSite: 'strict' as const,
@@ -38,18 +37,29 @@ export default async function handler(
 			maxAge: 0
 		};
 
-		res.setHeader('Set-Cookie', serialize('token', '', cookieOptions));
+		const refreshCookieOptions = {
+			httpOnly: true,
+			secure: process.env.NODE_ENV === 'production',
+			sameSite: 'strict' as const,
+			path: '/api/refresh',
+			expires: new Date(0),
+			maxAge: 0
+		};
 
-		const validationResult = accessTokenSchema.safeParse({
-			token: req.cookies.token
-		});
+		const visitedCookieOptions = {
+			httpOnly: false,
+			secure: process.env.NODE_ENV === 'production',
+			sameSite: 'strict' as const,
+			path: '/',
+			expires: new Date(0),
+			maxAge: 0
+		};
 
-		if (!validationResult.success) {
-			return res.status(401).json({
-				// error: 'Authentication required',
-				message: 'Valid authentication token cookie is required'
-			});
-		}
+		res.setHeader('Set-Cookie', [
+			serialize('token', '', accessCookieOptions),
+			serialize('refresh_token', '', refreshCookieOptions),
+			serialize('unlocked_before', '', visitedCookieOptions)
+		]);
 
 		return res.status(200).json({ message: 'Wallet locked successfully' });
 	} catch (error) {
