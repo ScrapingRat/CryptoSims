@@ -17,12 +17,10 @@ const CreateWalletPage = ({
 	const [error, setError] = useState('');
 	const [copied, setCopied] = useState(false);
 
-	// Copy to clipboard function
 	const copyToClipboard = async () => {
 		try {
 			await navigator.clipboard.writeText(seedPhrase);
 			setCopied(true);
-			// Reset the "Copied!" message after 2 seconds
 			setTimeout(() => setCopied(false), 2000);
 		} catch (err) {
 			console.error('Failed to copy: ', err);
@@ -128,7 +126,11 @@ const CreateWalletPage = ({
 							</div>
 						</div>
 					)}
-
+					{(!seedPhrase && !error) && (
+						<div className="p-4 bg-yellow-900/20 border border-yellow-500 rounded-lg">
+							<p className="text-yellow-400">Creating new wallet...</p>
+						</div>
+					)}
 					{error && (
 						<div className="p-4 bg-red-900/20 border border-red-500 rounded-lg">
 							<p className="text-red-400">{error}</p>

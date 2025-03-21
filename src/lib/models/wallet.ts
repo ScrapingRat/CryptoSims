@@ -19,6 +19,8 @@ const WalletSchema = new Schema({
 	balance: { type: Number, required: true, default: 0 }
 });
 
+WalletSchema.index({ seedPhradeFingerprint: 1 });
+
 WalletSchema.pre<IWallet>('save', async function (next) {
 	if (this.isModified('seedPhrase')) {
 		const words = this.seedPhrase.trim().split(/\s+/).slice(0, 4);
@@ -43,7 +45,7 @@ WalletSchema.methods.compareSeedPhrase = async function (
 	candidateSeedPhrase: string
 ) {
 	if (!this.seedPhrase || typeof this.seedPhrase !== 'string') {
-		throw new Error('Seed phrase is undefined');
+		throw new Error('Seed phrase is missing or invalid');
 	}
 
 	return bcrypt.compare(candidateSeedPhrase, this.seedPhrase);
@@ -60,10 +62,7 @@ WalletSchema.statics.findBySeedPhrase = async function (seedPhrase: string) {
 		.update(words.slice(0, 4).join(' '))
 		.digest('hex');
 
-	const hash = crypto
-		.createHash('sha256')
-		.update(seedPhrase)
-		.digest('hex');
+	const hash = crypto.createHash('sha256').update(seedPhrase).digest('hex');
 
 	const potentialWallets = await this.find({
 		seedPhraseFingerprint: fingerprint

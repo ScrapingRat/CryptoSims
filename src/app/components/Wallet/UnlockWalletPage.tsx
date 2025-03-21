@@ -17,9 +17,11 @@ const UnlockWalletPage = ({
 	const [message, setMessage] = useState('');
 	const [error, setError] = useState('');
 	const [seedPhrase, setSeedPhrase] = useState('');
+	const [loading, setLoading] = useState(false);
 
 	async function handleSubmit(e: React.FormEvent) {
 		e.preventDefault();
+		setLoading(true);
 		setError('');
 		setMessage('');
 
@@ -35,9 +37,11 @@ const UnlockWalletPage = ({
 				});
 
 			if (error) {
+				setLoading(false);
 				setError(errorMessage || error);
 				return;
 			}
+			setLoading(false);
 			setMessage(data?.message || 'Wallet unlocked successfully!');
 			setSeedPhrase('');
 			setIsUnlocking(false);
@@ -84,6 +88,9 @@ const UnlockWalletPage = ({
 							onChange={(e) => setSeedPhrase(e.target.value)}
 							required
 						/>
+						{loading && (
+							<p className='mt-2 text-sm text-yellow-500'>Unlocking wallet...</p>
+						)}
 						{error && (
 							<p className="mt-2 text-sm text-red-500">{error}</p>
 						)}

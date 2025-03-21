@@ -7,7 +7,6 @@ import connectToDatabase from '@actions/connectToDatabase';
 import Wallet from '@models/wallet';
 import { postMethodSchema } from '@schemas/methodSchema';
 import seedBodySchema from '@schemas/seedBodySchema';
-// import refreshAccessToken from 'lib/refreshAccessToken';
 
 const { SECRET_KEY, SECRET_KEY_REFRESH } = getConfig();
 const ROUTE_ENABLED = true;
@@ -16,17 +15,12 @@ const ACCESS_TOKEN_EXPIRY = 10;
 // const ACCESS_TOKEN_EXPIRY = 15 * 60;
 const REFRESH_TOKEN_EXPIRY = 7 * 24 * 60 * 60;
 
-export default async function handler(
-	req: NextApiRequest,
-	res: NextApiResponse
-) {
+const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	if (!ROUTE_ENABLED) {
 		return res
 			.status(503)
 			.json({ error: 'This endpoint is temporarily disabled' });
 	}
-
-	await connectToDatabase();
 
 	try {
 		const methodValidation = postMethodSchema.safeParse({
@@ -40,9 +34,6 @@ export default async function handler(
 			});
 		}
 
-		// const refresh = await refreshAccessToken(req);
-
-
 		const bodyValidation = seedBodySchema.safeParse(req.body);
 
 		if (!bodyValidation.success) {
@@ -50,6 +41,15 @@ export default async function handler(
 				error: 'Invalid request',
 				message: bodyValidation.error.issues[0].message
 			});
+		}
+
+		const dbConnected = await connectToDatabase();
+
+		if (!dbConnected.success)
+		{
+			return res.status(500).json({
+				error: 'Connection to the database failed'
+			})
 		}
 
 		const { seedPhrase } = bodyValidation.data;
@@ -120,7 +120,7 @@ export default async function handler(
 			sameSite: 'strict' as const,
 			path: '/',
 			maxAge: REFRESH_TOKEN_EXPIRY
-		}
+		};
 
 		res.setHeader('Set-Cookie', [
 			serialize('token', accessToken, accessCookieOptions),
@@ -140,4 +140,6 @@ export default async function handler(
 			console.error('Authentication error:', error);
 		}
 	}
-}
+};
+
+export default handler;

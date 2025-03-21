@@ -3,12 +3,10 @@
 import NoWalletPage from './Wallet/NoWalletPage';
 import { useEffect, useState, useCallback } from 'react';
 import { getCookie } from 'cookies-next';
-import connectToDatabase from 'lib/actions/connectToDatabase';
 import { useWallet } from 'app/contexts/WalletContext';
 import apiClient from 'lib/apiClient';
 
 const Wallet = () => {
-	const [dbConnected, setDbConnected] = useState(false);
 	const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 	const { isUnlocked, setIsUnlocked } = useWallet();
 	// const [message, setMessage] = useState('');
@@ -50,12 +48,6 @@ const Wallet = () => {
 		setIsUnlocked(true);
 	};
 
-	const checkDb = async () => {
-		const result = await connectToDatabase();
-		setDbConnected(result.success);
-		return result.success;
-	};
-
 	const checkAuth = useCallback(async () => {
 		setIsCheckingAuth(true);
 		try {
@@ -70,12 +62,8 @@ const Wallet = () => {
 	}, [setIsUnlocked]);
 
 	useEffect(() => {
-		checkDb();
-
-		if (dbConnected) {
-			checkAuth();
-		}
-	}, [dbConnected, checkAuth]);
+		checkAuth();
+	}, [checkAuth]);
 
 	useEffect(() => {
 		if (isUnlocked) {
@@ -127,9 +115,7 @@ const Wallet = () => {
 		}
 	};
 
-	if (!dbConnected) {
-		return <p>Establishing connection to the database...</p>;
-	} else if (isCheckingAuth) {
+	if (isCheckingAuth) {
 		return <p>Loading...</p>;
 	} else if (isUnlocked) {
 		return (

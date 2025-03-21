@@ -1,5 +1,3 @@
-import refreshAccessToken from 'lib/refreshAccessToken';
-
 interface ApiResponse<T> {
 	data?: T;
 	error?: string;
@@ -95,16 +93,25 @@ const apiClient = async <T>(
 
 	if (requireAuth && response.status === 401) {
 		try {
-			const refreshResult = await refreshAccessToken();
+			const refreshResponse = await fetch('api/refresh', {
+				method: 'POST',
+				credentials: 'same-origin',
+				headers: {
+					'Content-Type': 'application/json'
+				}
+			});
 
-			if (refreshResult.success) {
+			const refreshData = await refreshResponse.json();
+
+			if (refreshResponse.ok) {
 				response = await fetch(url, fetchOptions);
 				refreshed = true;
 			} else {
 				return {
 					error:
-						refreshResult.error ||
+						refreshData.error ||
 						'Session expired. Please log in again.',
+					errorMessage: refreshData.message,
 					status: 401,
 					refreshed: false
 				};

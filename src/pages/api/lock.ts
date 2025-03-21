@@ -5,10 +5,7 @@ import { deleteMethodSchema } from '@schemas/methodSchema';
 
 const ROUTE_ENABLED = true;
 
-export default async function handler(
-	req: NextApiRequest,
-	res: NextApiResponse
-) {
+const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	res.setHeader('Content-Type', 'application/json');
 	if (!ROUTE_ENABLED) {
 		return res
@@ -70,4 +67,6 @@ export default async function handler(
 			console.error('Failed to lock wallet:', error);
 		}
 	}
-}
+};
+
+export default handler;

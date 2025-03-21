@@ -11,17 +11,12 @@ function generateRandomInteger(min: number, max: number) {
 	return Math.floor(min + Math.random() * (max - min + 1));
 }
 
-export default async function handler(
-	req: NextApiRequest,
-	res: NextApiResponse
-) {
+const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	if (!ROUTE_ENABLED) {
 		return res
 			.status(503)
 			.json({ error: 'This endpoint is temporarily disabled' });
 	}
-
-	await connectToDatabase();
 
 	try {
 		const methodValidation = postMethodSchema.safeParse({
@@ -35,7 +30,15 @@ export default async function handler(
 			});
 		}
 
-		let seedPhrase: string = bip39.generateMnemonic(128);
+		const dbConnected = await connectToDatabase();
+
+		if (!dbConnected.success) {
+			return res.status(500).json({
+				error: 'Connection to the database failed'
+			});
+		}
+
+		let seedPhrase = bip39.generateMnemonic(128);
 		let existingWallet = await Wallet.findBySeedPhrase(seedPhrase);
 
 		while (existingWallet) {
@@ -60,4 +63,6 @@ export default async function handler(
 			console.error(error);
 		}
 	}
-}
+};
+
+export default handler;

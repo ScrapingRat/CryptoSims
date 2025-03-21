@@ -1,23 +1,27 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import jwt from 'jsonwebtoken';
 import { ZodError } from 'zod';
-import connectToDatabase from '@actions/connectToDatabase';
+// import connectToDatabase from '@actions/connectToDatabase';
 import { getMethodSchema } from '@schemas/methodSchema';
-import { authorizeToken } from 'lib/authorizeToken';
+import authorizeToken from 'lib/authorizeToken';
 
 const ROUTE_ENABLED = true;
 
-export default async function handler(
-	req: NextApiRequest,
-	res: NextApiResponse
-) {
+const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	if (!ROUTE_ENABLED) {
 		return res
 			.status(503)
 			.json({ error: 'This endpoint is temporarily disabled' });
 	}
 
-	await connectToDatabase();
+	// const dbConnected = await connectToDatabase();
+
+	// if (!dbConnected.success)
+	// {
+	// 	return res.status(500).json({
+	// 		error: 'Connection to the database failed'
+	// 	})
+	// }
 
 	try {
 		const methodValidation = getMethodSchema.safeParse({
@@ -42,7 +46,7 @@ export default async function handler(
 
 		return res.status(200).json({
 			isAuthorized: auth.isAuthorized,
-			message: 'Authentication successful',
+			message: 'Authentication successful'
 		});
 	} catch (error) {
 		if (error instanceof jwt.JsonWebTokenError) {
@@ -57,4 +61,6 @@ export default async function handler(
 			return res.status(500).json({ error: 'Internal server error' });
 		}
 	}
-}
+};
+
+export default handler;

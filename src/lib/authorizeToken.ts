@@ -11,7 +11,7 @@ interface AuthResult {
 	error?: string;
 }
 
-export async function authorizeToken(req: NextApiRequest): Promise<AuthResult> {
+const authorizeToken = async (req: NextApiRequest): Promise<AuthResult> => {
 	try {
 		const tokenValidation = accessTokenSchema.safeParse({
 			token: req.cookies.token
@@ -79,3 +79,5 @@ export async function authorizeToken(req: NextApiRequest): Promise<AuthResult> {
 		}
 	}
 }
+
+export default authorizeToken;

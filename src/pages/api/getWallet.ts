@@ -2,15 +2,12 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { ZodError } from 'zod';
 import connectToDatabase from '@actions/connectToDatabase';
 import Wallet from '@models/wallet';
-import { authorizeToken } from 'lib/authorizeToken';
+import authorizeToken from 'lib/authorizeToken';
 import { getMethodSchema } from '@schemas/methodSchema';
 
 const ROUTE_ENABLED = true;
 
-export default async function handler(
-	req: NextApiRequest,
-	res: NextApiResponse
-) {
+const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	if (!ROUTE_ENABLED) {
 		return res
 			.status(503)
@@ -29,7 +26,13 @@ export default async function handler(
 			});
 		}
 
-		await connectToDatabase();
+		const dbConnected = await connectToDatabase();
+
+		if (!dbConnected.success) {
+			return res.status(500).json({
+				error: 'Connection to the database failed'
+			});
+		}
 
 		const auth = await authorizeToken(req);
 
@@ -53,4 +56,6 @@ export default async function handler(
 			console.error('Authentication error:', error);
 		}
 	}
-}
+};
+
+export default handler;
