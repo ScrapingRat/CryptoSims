@@ -1,9 +1,11 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import Ohlc, { IOhlc } from '@models/ohlc';
 import connectToDatabase from '@actions/connectToDatabase';
+import authorizeToken from 'lib/authorizeToken';
 import { getMethodSchema } from '@schemas/methodSchema';
 
 const ROUTE_ENABLED = true;
+const MAX_RANGE_MINUTES = 60 * 24 * 7;
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	if (!ROUTE_ENABLED) {
@@ -31,48 +33,107 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 				.json({ error: 'Database connection failed' });
 		}
 
-		const { date } = req.query;
+		const auth = await authorizeToken(req);
 
-		console.log(date);
-		if (!date) {
+		if (!auth.isAuthorized) {
+			return res.status(401).json({ error: auth.error });
+		}
+
+		const { date, from, to } = req.query;
+
+		if (!date && !from && !to) {
 			return res
 				.status(400)
 				.json({ error: 'Date parameter is required' });
 		}
 
-		let timestamp: number;
+		if (date && !from && !to) {
+			let timestamp: number;
 
-		try {
-			if (/^\d+$/.test(date as string)) {
-				timestamp = parseInt(date as string, 10);
-			}
-			else {
-				timestamp = new Date(date as string).getTime() / 1000;
-				console.log(timestamp);
+			try {
+				if (/^\d+$/.test(date as string)) {
+					timestamp = parseInt(date as string, 10);
+				} else {
+					timestamp = new Date(date as string).getTime() / 1000;
+				}
+
+				if (isNaN(timestamp)) {
+					throw new Error('Invalid date format');
+				}
+			} catch {
+				return res.status(400).json({
+					error: 'Invalid date format',
+					message:
+						'Please provide date as a Unix timestamp or ISO date string'
+				});
 			}
 
-			if (isNaN(timestamp)) {
-				throw new Error('Invalid date format');
+			const data: IOhlc | null = await Ohlc.findByTimestamp(timestamp);
+
+			if (!data) {
+				return res.status(404).json({
+					error: 'No data found',
+					message: 'No OHLC data found for the specified timestamp'
+				});
 			}
-		} catch {
-			return res.status(400).json({
-				error: 'Invalid date format',
-				message:
-					'Please provide date as a Unix timestamp or ISO date string'
-			});
+
+			return res.status(200).json(data);
+		} else if (!date && from && to) {
+			let timestampFrom: number;
+			let timestampTo: number;
+
+			try {
+				if (/^\d+$/.test(date as string)) {
+					timestampFrom = parseInt(from as string, 10);
+					timestampTo = parseInt(to as string, 10);
+				} else {
+					timestampFrom = new Date(from as string).getTime() / 1000;
+					timestampTo = new Date(to as string).getTime() / 1000;
+				}
+
+				if (isNaN(timestampFrom) || isNaN(timestampTo)) {
+					throw new Error('Invalid date format');
+				}
+
+				if (timestampFrom === timestampTo) {
+					throw new Error('Timestamps are the same');
+				}
+
+				if (timestampFrom > timestampTo) {
+					throw new Error('Invalid range');
+				}
+
+				const rangeMinutes = (timestampTo - timestampFrom) / 60;
+				if (rangeMinutes > MAX_RANGE_MINUTES) {
+					return res.status(400).json({
+						error: 'Range too large',
+						message: `The maximum allowed range is ${MAX_RANGE_MINUTES} minutes (${
+							MAX_RANGE_MINUTES / 60 / 24
+						} days)`
+					});
+				}
+			} catch (error) {
+				return res.status(400).json({
+					error: (error as Error).message,
+					message:
+						'Please provide date as a Unix timestamp or ISO date string'
+				});
+			}
+
+			const data: IOhlc[] | null = await Ohlc.findByRange(
+				timestampFrom,
+				timestampTo
+			);
+
+			if (!data) {
+				return res.status(404).json({
+					error: 'No data found',
+					message: 'No OHLC data found for the specified timestamp'
+				});
+			}
+
+			return res.status(200).json(data);
 		}
-
-		const data: IOhlc | null = await Ohlc.findByTimestamp(timestamp);
-
-		if (!data) {
-			return res.status(404).json({
-				error: 'No data found',
-				message: 'No OHLC data found for the specified timestamp'
-			});
-		}
-
-		console.log(data);
-		return res.status(200).json(data);
 	} catch (error) {
 		console.error('Error fetching BTC value:', error);
 		return res.status(500).json({
