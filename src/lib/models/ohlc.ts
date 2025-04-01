@@ -12,6 +12,7 @@ interface IOhlc extends Document {
 interface OhlcModel extends mongoose.Model<IOhlc> {
 	findByTimestamp(timestamp: number): Promise<IOhlc | null>;
 	findExactTimestamp(timestamp: number): Promise<IOhlc | null>;
+	findByRange(from: number, to: number): Promise<IOhlc[] | null>;
 }
 
 const OhlcSchema = new Schema({
@@ -35,7 +36,6 @@ OhlcSchema.statics.findByTimestamp = async function (
 	const before = await this.findOne({ timestamp: { $lt: timestamp } })
 		.sort({ timestamp: -1 })
 		.limit(1);
-	console.log(before);
 
 	return before;
 };
@@ -44,7 +44,15 @@ OhlcSchema.statics.findExactTimestamp = async function (
 	timestamp: number
 ): Promise<IOhlc | null> {
 	return this.findOne({ timestamp });
+};
 
+OhlcSchema.statics.findByRange = async function (
+	from: number,
+	to: number
+): Promise<IOhlc[] | null> {
+	return this.find({
+		timestamp: { $gte: from, $lte: to }
+	}).sort({ timestamp: 1 });
 };
 
 const Ohlc =
