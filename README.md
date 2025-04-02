@@ -12,6 +12,7 @@ curl -L -o bitcoin-historical-data.zip https://www.kaggle.com/api/v1/datasets/do
 unzip bitcoin-historical-data.zip
 mv *.csv data.csv
 curl -X POST http://localhost:3000/api/update -H 'x-api-key: $API_KEY'
+curl -X POST http://localhost:3000/api/catchup -H 'x-api-key: $API_KEY'
 ```
 
 [http://localhost:3000](http://localhost:3000)
