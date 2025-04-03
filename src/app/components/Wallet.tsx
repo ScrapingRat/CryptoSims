@@ -5,18 +5,22 @@ import { useEffect, useState, useCallback } from 'react';
 import { getCookie } from 'cookies-next';
 import { useWallet } from 'app/contexts/WalletContext';
 import apiClient from 'lib/apiClient';
+import { IOhlc } from '@models/ohlc';
 
 const Wallet = () => {
 	const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 	const { isUnlocked, setIsUnlocked } = useWallet();
 	// const [message, setMessage] = useState('');
-	const [balance, setBalance] = useState<number | null>(null);
+	const [balanceFiat, setBalanceFiat] = useState<number | null>(null);
+	const [balanceBtc, setBalanceBtc] = useState<number | null>(null);
+	const [btcToFiat, setBtcToFiat] = useState(0);
 	// const [error, setError] = useState('');
 
 	const fetchWallet = useCallback(async () => {
 		try {
 			interface WalletResponse {
-				balance: number;
+				balanceFiat: number;
+				balanceBtc: number;
 			}
 
 			const { data, error, refreshed, status } =
@@ -37,12 +41,26 @@ const Wallet = () => {
 			}
 
 			if (data) {
-				setBalance(data.balance);
+				setBalanceFiat(data.balanceFiat);
+				setBalanceBtc(data.balanceBtc);
+				const now = Math.floor(Date.now() / 1000);
+
+				const ohlc = await apiClient<IOhlc>(
+					`api/btc/value?date=${now}`,
+					'GET'
+				);
+
+				if (ohlc.error) {
+					console.error('Error fetching BTC price:', ohlc.error);
+					return;
+				}
+				const usd = (ohlc?.data?.close || 0) * (data.balanceBtc || 0);
+				setBtcToFiat(Math.round(usd * 100) / 100);
 			}
 		} catch (unexpectedError) {
 			console.error('Unexpected error in fetchWallet:', unexpectedError);
 		}
-	}, [setBalance, setIsUnlocked]);
+	}, [setBalanceFiat, setBalanceBtc, setIsUnlocked]);
 
 	const refreshWalletStatus = () => {
 		setIsUnlocked(true);
@@ -119,34 +137,57 @@ const Wallet = () => {
 		return <p>Loading...</p>;
 	} else if (isUnlocked) {
 		return (
-			<div className="space-y-6">
+			<div className="w-full max-w-md mx-auto space-y-8">
 				<div className="p-6 border border-accent2 rounded-lg bg-background/50">
-					<h3 className="text-lg font-medium text-white mb-4">
+					<h3 className="text-lg font-medium text-white mb-4 text-center">
 						Your Wallet
 					</h3>
 
-					{balance !== null ? (
+					{balanceFiat !== null && balanceBtc !== null ? (
 						<div className="space-y-4">
 							<div>
-								<p className="text-gray-400">Balance:</p>
-								<p className="text-xl font-bold text-white">
-									{balance}
+								<p className="text-gray-400 text-center">
+									Balance:
+								</p>
+								<p className="text-xl font-bold text-white text-center">
+									{balanceFiat} USD
+								</p>
+								<p className="text-xl font-bold text-white text-center">
+									{balanceBtc} BTC
+									<span className="text-xs opacity-50">
+										{' '}
+										≃ {btcToFiat} USD
+									</span>
 								</p>
 							</div>
 
-							<div className="flex justify-end mt-6">
-								<button
-									onClick={handleLock}
-									className="py-2 px-4 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors">
-									Lock Wallet
-								</button>
-							</div>
-							<div className="flex justify-end mt-6">
-								<button
-									onClick={fetchWallet}
-									className="py-2 px-4 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors">
-									Fetch Wallet
-								</button>
+							<div className="w-full max-w-md mx-auto space-y-8">
+								<div className="flex gap-4">
+									<button
+										onClick={handleLock}
+										className="flex-1 py-3 px-4 bg-accent2 text-white rounded-lg hover:bg-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+										Lock Wallet
+									</button>
+								</div>
+								<div className="flex gap-4">
+									<button
+										onClick={fetchWallet}
+										className="flex-1 py-3 px-4 bg-accent2 text-white rounded-lg hover:bg-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+										<svg
+											xmlns="http://www.w3.org/2000/svg"
+											fill="none"
+											viewBox="0 0 24 24"
+											strokeWidth={1.5}
+											stroke="currentColor"
+											className="size-6">
+											<path
+												strokeLinecap="round"
+												strokeLinejoin="round"
+												d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
+											/>
+										</svg>
+									</button>
+								</div>
 							</div>
 						</div>
 					) : (

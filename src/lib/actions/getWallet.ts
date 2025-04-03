@@ -9,7 +9,7 @@ import connectToDatabase from 'lib/actions/connectToDatabase';
 const { SECRET_KEY } = getConfig();
 
 type WalletResponse = {
-	wallet?: { balance: number };
+	wallet?: { balanceFiat: number };
 	error?: string;
 };
 
@@ -37,7 +37,7 @@ const getWallet = async (): Promise<WalletResponse> => {
 		}
 
 		const sanitizedWallet = {
-			balance: wallet.balance
+			balanceFiat: wallet.balanceFiat
 		};
 
 		return { wallet: sanitizedWallet };

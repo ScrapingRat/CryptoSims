@@ -34,7 +34,7 @@ const CreateWalletPage = ({
 		try {
 			interface CreateResponse {
 				seedPhrase: string;
-				balance: number;
+				balanceFiat: number;
 			}
 
 			const { data, error } =
@@ -45,7 +45,7 @@ const CreateWalletPage = ({
 
 			if (error) {
 				setError(error);
-			} else if (data?.seedPhrase && data?.balance !== undefined) {
+			} else if (data?.seedPhrase && data?.balanceFiat !== undefined) {
 				setSeedPhrase(data?.seedPhrase);
 			}
 		} catch (err) {

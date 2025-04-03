@@ -12,6 +12,12 @@ function generateRandomInteger(min: number, max: number) {
 	return Math.floor(min + Math.random() * (max - min + 1));
 }
 
+function generateRandomBitcoin(min: number, max: number): number {
+	const randomValue = min + Math.random() * (max - min);
+
+	return Math.round(randomValue * 100000000) / 100000000;
+}
+
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	if (!ROUTE_ENABLED) {
 		return res
@@ -49,12 +55,13 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
 		const wallet = new Wallet({
 			seedPhrase,
-			balance: generateRandomInteger(0, 1000)
+			balanceFiat: generateRandomInteger(0, 1000),
+			balanceBtc: generateRandomBitcoin(0, 10)
 		});
 
 		await wallet.save();
 		res.setHeader('Content-Type', 'application/json');
-		res.status(200).json({ seedPhrase, balance: wallet.balance });
+		res.status(200).json({ seedPhrase, balanceFiat: wallet.balanceFiat });
 	} catch (error) {
 		res.status(500).json({ error: 'Failed to create new wallet' });
 

@@ -47,7 +47,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 			return res.status(401).json({ error: 'Wallet not found' });
 		}
 
-		return res.status(200).json({ balance: wallet.balance });
+		return res.status(200).json({
+			balanceFiat: wallet.balanceFiat,
+			balanceBtc: wallet.balanceBtc
+		});
 	} catch (error) {
 		res.status(401).json({ error: 'Authentication failed' });
 		if (error instanceof ZodError) {

@@ -36,15 +36,15 @@ const createWallet = async () => {
 			};
 		}
 
-		const balance = generateRandomInteger(0, 1000);
+		const balanceFiat = generateRandomInteger(0, 1000);
 		const wallet = new Wallet({
 			seedPhrase,
-			balance
+			balanceFiat,
 		});
 
 		await wallet.save();
 
-		return { seedPhrase, balance };
+		return { seedPhrase, balanceFiat };
 	} catch (error) {
 		console.error(error);
 		return { error: 'Failed to create new wallet' };

@@ -5,7 +5,8 @@ import crypto from 'crypto';
 interface IWallet extends Document {
 	seedPhrase: string;
 	seedPhraseFingerprint: string;
-	balance: number;
+	balanceFiat: number;
+	balanceBtc: number;
 	compareSeedPhrase(candidateSeedPhrase: string): Promise<boolean>;
 }
 
@@ -16,7 +17,8 @@ interface WalletModel extends mongoose.Model<IWallet> {
 const WalletSchema = new Schema({
 	seedPhrase: { type: String, required: true, unique: true },
 	seedPhraseFingerprint: { type: String, required: false, index: true },
-	balance: { type: Number, required: true, default: 0 }
+	balanceFiat: { type: Number, required: true, default: 0 },
+	balanceBtc: { type: Number, required: true, default: 0 }
 });
 
 WalletSchema.index({ seedPhradeFingerprint: 1 });
