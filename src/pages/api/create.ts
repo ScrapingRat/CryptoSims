@@ -4,6 +4,7 @@ import { ZodError } from 'zod';
 import Wallet from '@models/wallet';
 import connectToDatabase from '@actions/connectToDatabase';
 import { postMethodSchema } from '@schemas/methodSchema';
+import rateLimit from 'lib/rateLimit';
 
 const ROUTE_ENABLED = true;
 
@@ -65,4 +66,4 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	}
 };
 
-export default handler;
+export default rateLimit(3, 5 * 60 * 1000)(handler);

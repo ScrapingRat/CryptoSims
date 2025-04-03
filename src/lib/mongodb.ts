@@ -1,6 +1,8 @@
 import mongoose from 'mongoose';
 import getConfig from './getConfig';
 
+mongoose.connection.setMaxListeners(10);
+
 const { MONGODB_URI } = getConfig();
 
 const options = {
@@ -29,18 +31,29 @@ const cached: { mongoose: CachedMongoose } = {
 	}
 };
 
+let listenersAdded = false;
+
+const handleConnected = () => console.log('MongoDB connected successfully');
+const handleError = (error: Error) =>
+	console.error('MongoDB connection error:', error);
+const handleDisconnected = () => console.log('MongoDB connection lost');
+
 const addConnectionHandlers = () => {
-	mongoose.connection.on('connected', () => {
-		console.log('MongoDB connected successfully');
-	});
+	if (listenersAdded) return;
 
-	mongoose.connection.on('error', (error) => {
-		console.error('MongoDB connection error:', error);
-	});
+	mongoose.connection.on('connected', handleConnected);
+	mongoose.connection.on('error', handleError);
+	mongoose.connection.on('disconnected', handleDisconnected);
 
-	mongoose.connection.on('disconnected', () => {
-		console.log('MongoDB connection lost');
-	});
+	listenersAdded = true;
+};
+
+const removeConnectionHandlers = () => {
+	mongoose.connection.off('connected', handleConnected);
+	mongoose.connection.off('error', handleError);
+	mongoose.connection.off('disconnected', handleDisconnected);
+
+	listenersAdded = false;
 };
 
 const validateConfig = () => {
@@ -80,8 +93,19 @@ export const disconnect = async () => {
 		await mongoose.disconnect();
 		cached.mongoose.conn = null;
 		cached.mongoose.promise = null;
+		removeConnectionHandlers();
 	}
 };
+
+process.on('SIGINT', async () => {
+	await disconnect();
+	process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+	await disconnect();
+	process.exit(0);
+});
 
 const mongoDbService: MongoDbService = {
 	connect,

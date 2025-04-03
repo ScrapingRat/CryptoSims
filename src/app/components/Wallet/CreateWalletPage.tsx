@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import createWallet from 'lib/actions/createWallet';
+import apiClient from 'lib/apiClient';
 
 interface CreateWalletPageProps {
 	isCreating: boolean;
@@ -32,12 +32,21 @@ const CreateWalletPage = ({
 		setError('');
 
 		try {
-			const result = await createWallet();
+			interface CreateResponse {
+				seedPhrase: string;
+				balance: number;
+			}
 
-			if (result.error) {
-				setError(result.error);
-			} else if (result.seedPhrase && result.balance !== undefined) {
-				setSeedPhrase(result.seedPhrase);
+			const { data, error } =
+				await apiClient<CreateResponse>('api/create', 'POST', {
+					body: JSON.stringify({ seedPhrase })
+				});
+			// const result = await createWallet();
+
+			if (error) {
+				setError(error);
+			} else if (data?.seedPhrase && data?.balance !== undefined) {
+				setSeedPhrase(data?.seedPhrase);
 			}
 		} catch (err) {
 			console.error('Error creating wallet:', err);
