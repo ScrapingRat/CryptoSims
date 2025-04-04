@@ -3,7 +3,7 @@ import { ZodError } from 'zod';
 import connectToDatabase from '@actions/connectToDatabase';
 import Wallet from '@models/wallet';
 import authorizeToken from 'lib/authorizeToken';
-import { getMethodSchema } from '@schemas/methodSchema';
+import { postMethodSchema } from '@schemas/methodSchema';
 
 const ROUTE_ENABLED = true;
 
@@ -15,14 +15,14 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	}
 
 	try {
-		const methodValidation = getMethodSchema.safeParse({
+		const methodValidation = postMethodSchema.safeParse({
 			method: req.method
 		});
 
 		if (!methodValidation.success) {
 			return res.status(405).json({
 				error: 'Method not allowed',
-				message: 'This endpoint only accepts GET requests'
+				message: 'This endpoint only accepts POST requests'
 			});
 		}
 
@@ -40,21 +40,16 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 			return res.status(401).json({ error: auth.error });
 		}
 
-		const walletId = auth.walletId;
-		const wallet = await Wallet.findById(walletId);
+		const walletId = auth.walletId || 'null';
+		const { success, message } = await Wallet.incFiat(walletId, 500);
 
-		if (!wallet) {
-			return res.status(401).json({ error: 'Wallet not found' });
+		if (!success) {
+			return res.status(400).json({ error: message });
 		}
 
-		return res.status(200).json({
-			balanceFiat: wallet.balanceFiat,
-			balanceBtc: wallet.balanceBtc,
-			historyFiat: wallet.purchaseFiat,
-			historyBtc: wallet.purchaseBtc
-		});
+		return res.status(200).json({ message });
 	} catch (error) {
-		res.status(401).json({ error: 'Authentication failed' });
+		res.status(401).json({ error });
 		if (error instanceof ZodError) {
 			console.error('Validation error:', error.issues);
 		} else {

@@ -8,15 +8,15 @@ import rateLimit from 'lib/rateLimit';
 
 const ROUTE_ENABLED = true;
 
-function generateRandomInteger(min: number, max: number) {
-	return Math.floor(min + Math.random() * (max - min + 1));
-}
+// function generateRandomInteger(min: number, max: number) {
+// 	return Math.floor(min + Math.random() * (max - min + 1));
+// }
 
-function generateRandomBitcoin(min: number, max: number): number {
-	const randomValue = min + Math.random() * (max - min);
+// function generateRandomBitcoin(min: number, max: number): number {
+// 	const randomValue = min + Math.random() * (max - min);
 
-	return Math.round(randomValue * 100000000) / 100000000;
-}
+// 	return Math.round(randomValue * 100000000) / 100000000;
+// }
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	if (!ROUTE_ENABLED) {
@@ -55,8 +55,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
 		const wallet = new Wallet({
 			seedPhrase,
-			balanceFiat: generateRandomInteger(0, 1000),
-			balanceBtc: generateRandomBitcoin(0, 10)
+			balanceFiat: 0,
+			balanceBtc: 0
 		});
 
 		await wallet.save();

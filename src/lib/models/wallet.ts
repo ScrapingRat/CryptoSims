@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { ObjectId } from 'mongodb';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 
@@ -7,18 +8,48 @@ interface IWallet extends Document {
 	seedPhraseFingerprint: string;
 	balanceFiat: number;
 	balanceBtc: number;
+	purchaseFiat: [string, Date, number];
+	purchaseBtc: [string, Date, number];
 	compareSeedPhrase(candidateSeedPhrase: string): Promise<boolean>;
 }
 
 interface WalletModel extends mongoose.Model<IWallet> {
 	findBySeedPhrase(seedPhrase: string): Promise<IWallet | null>;
+	// purchaseFiat(amount: number): Promise<string | null>;
+	incFiat(
+		walletId: string,
+		amount: number,
+		purchaseId?: string
+	): { success: boolean; message: string; purchaseId: string };
+	decFiat(
+		walletId: string,
+		amount: number,
+		purchaseId?: string
+	): { success: boolean; message: string; purchaseId: string };
+	incBtc(
+		walletId: string,
+		amount: number,
+		purchaseId?: string
+	): { success: boolean; message: string; purchaseId: string };
+	decBtc(
+		walletId: string,
+		amount: number,
+		purchaseId?: string
+	): { success: boolean; message: string; purchaseId: string };
 }
 
 const WalletSchema = new Schema({
 	seedPhrase: { type: String, required: true, unique: true },
 	seedPhraseFingerprint: { type: String, required: false, index: true },
-	balanceFiat: { type: Number, required: true, default: 0 },
-	balanceBtc: { type: Number, required: true, default: 0 }
+	balanceFiat: {
+		type: Number,
+		required: true,
+		default: 0,
+		min: [0, 'Balance cannot go below zero.']
+	},
+	purchaseFiat: { type: Array, required: false },
+	balanceBtc: { type: Number, required: true, default: 0 },
+	purchaseBtc: { type: Array, required: false }
 });
 
 WalletSchema.index({ seedPhradeFingerprint: 1 });
@@ -77,6 +108,203 @@ WalletSchema.statics.findBySeedPhrase = async function (seedPhrase: string) {
 		}
 	}
 	return null;
+};
+
+WalletSchema.statics.incFiat = async function (
+	walletId: string,
+	amount: number,
+	purchaseId: ObjectId
+) {
+	if (amount < 0) {
+		console.error(`incFiat error: Negative amount attempted: ${amount}`);
+		return {
+			success: false,
+			message: 'Amount cannot be negative.'
+		};
+	}
+
+	const date = new Date();
+
+	if (!purchaseId) {
+		purchaseId = new ObjectId();
+	}
+
+	const updatedWallet = await this.findByIdAndUpdate(
+		walletId,
+		{
+			$inc: { balanceFiat: amount },
+			$push: { purchaseFiat: [purchaseId, date, amount] }
+		},
+		{ new: true, runValidators: true }
+	);
+
+	if (!updatedWallet) {
+		console.error(
+			`incFiat error: Wallet with ID ${walletId} not found or update failed.`
+		);
+		return { success: false, message: `Failed to update wallet balance.` };
+	}
+
+	return {
+		success: true,
+		message: `Successfully increased USD by ${amount}. New balance is ${updatedWallet.balanceFiat}.`,
+		purchaseId
+	};
+};
+
+WalletSchema.statics.decFiat = async function (
+	walletId: string,
+	amount: number,
+	purchaseId: ObjectId
+) {
+	if (amount < 0) {
+		console.error(`incFiat error: Negative amount attempted: ${amount}`);
+		return {
+			success: false,
+			message: 'Amount cannot be negative.',
+			purchaseId: purchaseId
+		};
+	}
+
+	const wallet = await this.findById(walletId);
+
+	if (!wallet) {
+		console.error(`decFiat error: Wallet with ID ${walletId} not found.`);
+		return { success: false, message: `Wallet does not exist.` };
+	}
+
+	if (wallet.balanceFiat < amount) {
+		console.error(
+			`decFiat error: Insufficient balance. Wallet ID: ${walletId}, Current Balance: ${wallet.balanceFiat}, Requested: -${amount}`
+		);
+		return { success: false, message: `Insufficient balance.` };
+	}
+
+	const date = new Date();
+
+	if (!purchaseId) {
+		purchaseId = new ObjectId();
+	}
+
+	const updatedWallet = await this.findByIdAndUpdate(
+		walletId,
+		{
+			$inc: { balanceFiat: -amount },
+			$push: { purchaseFiat: [purchaseId, date, -amount] }
+		},
+		{ new: true, runValidators: true, context: 'query' }
+	);
+
+	if (!updatedWallet) {
+		console.error(
+			`decFiat error: Something went wrong updating wallet with ID ${walletId}.`
+		);
+		return { success: false, message: `Failed to update wallet balance.` };
+	}
+
+	return {
+		success: true,
+		message: `Successfully decreased USD by ${amount}. New balance is ${updatedWallet.balanceFiat}.`,
+		purchaseId
+	};
+};
+
+WalletSchema.statics.incBtc = async function (
+	walletId: string,
+	amount: number,
+	purchaseId: ObjectId
+) {
+	if (amount < 0) {
+		console.error(`incBtc error: Negative amount attempted: ${amount}`);
+		return {
+			success: false,
+			message: 'Amount cannot be negative.'
+		};
+	}
+
+	const date = new Date();
+
+	if (!purchaseId) {
+		purchaseId = new ObjectId();
+	}
+
+	const updatedWallet = await this.findByIdAndUpdate(
+		walletId,
+		{
+			$inc: { balanceBtc: amount },
+			$push: { purchaseBtc: [purchaseId, date, amount] }
+		},
+		{ new: true, runValidators: true }
+	);
+
+	if (!updatedWallet) {
+		console.error(
+			`incBtc error: Wallet with ID ${walletId} not found or update failed.`
+		);
+		return { success: false, message: `Failed to update wallet balance.` };
+	}
+
+	return {
+		success: true,
+		message: `Successfully increased BTC by ${amount}. New balance is ${updatedWallet.balanceBtc}.`,
+		purchaseId
+	};
+};
+
+WalletSchema.statics.decBtc = async function (
+	walletId: string,
+	amount: number,
+	purchaseId: ObjectId
+) {
+	if (amount < 0) {
+		console.error(`incBtc error: Negative amount attempted: ${amount}`);
+		return {
+			success: false,
+			message: 'Amount cannot be negative.'
+		};
+	}
+
+	const wallet = await this.findById(walletId);
+
+	if (!wallet) {
+		console.error(`decBtc error: Wallet with ID ${walletId} not found.`);
+		return { success: false, message: `Wallet does not exist.` };
+	}
+
+	if (wallet.balanceBtc < amount) {
+		console.error(
+			`decBtc error: Insufficient balance. Wallet ID: ${walletId}, Current Balance: ${wallet.balanceBtc}, Requested: -${amount}`
+		);
+		return { success: false, message: `Insufficient balance.` };
+	}
+
+	const date = new Date();
+
+	if (!purchaseId) {
+		purchaseId = new ObjectId();
+	}
+
+	const updatedWallet = await this.findByIdAndUpdate(
+		walletId,
+		{
+			$inc: { balanceBtc: -amount },
+			$push: { purchaseBtc: [purchaseId, date, -amount] }
+		},
+		{ new: true, runValidators: true, context: 'query' }
+	);
+
+	if (!updatedWallet) {
+		console.error(
+			`decBtc error: Something went wrong updating wallet with ID ${walletId}.`
+		);
+		return { success: false, message: `Failed to update wallet balance.` };
+	}
+
+	return {
+		success: true,
+		message: `Successfully decreased BTC by ${amount}. New balance is ${updatedWallet.balanceBtc}.`,
+		purchaseId
+	};
 };
 
 const Wallet =

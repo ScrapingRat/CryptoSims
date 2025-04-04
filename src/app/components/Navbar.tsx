@@ -5,7 +5,7 @@ import { useWallet } from 'app/contexts/WalletContext';
 import apiClient from 'lib/apiClient';
 
 export default function Navbar() {
-	const { isUnlocked, setIsUnlocked } = useWallet();
+	const { isUnlocked, setIsUnlocked, fetchWallet } = useWallet();
 
 	const handleLock = async () => {
 		try {
@@ -46,24 +46,44 @@ export default function Navbar() {
 						Wallet
 					</Link> */}
 					{isUnlocked && (
-						<button
-							onClick={handleLock}
-							type="button"
-							className="rounded-lg bg-white hover:bg-accent7 p-1 text-black font-semibold flex items-center">
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								viewBox="0 0 24 24"
-								fill="currentColor"
-								className="size-6">
-								<path
-									fillRule="evenodd"
-									d="M12 1.5a5.25 5.25 0 0 0-5.25 5.25v3a3 3 0 0 0-3 3v6.75a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3v-6.75a3 3 0 0 0-3-3v-3c0-2.9-2.35-5.25-5.25-5.25Zm3.75 8.25v-3a3.75 3.75 0 1 0-7.5 0v3h7.5Z"
-									clipRule="evenodd"
-								/>
-							</svg>
-						</button>
+						<div className="inline-flex space-x-3">
+							<button
+								onClick={fetchWallet}
+								className="p-1 bg-accent2 text-white rounded-lg hover:bg-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									fill="none"
+									viewBox="0 0 24 24"
+									strokeWidth={1.5}
+									stroke="currentColor"
+									className="size-6">
+									<path
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
+									/>
+								</svg>
+							</button>
+
+							<button
+								onClick={handleLock}
+								type="button"
+								className="rounded-lg bg-white hover:bg-accent5 p-1 text-black font-semibold flex items-center">
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									viewBox="0 0 24 24"
+									fill="currentColor"
+									className="size-6">
+									<path
+										fillRule="evenodd"
+										d="M12 1.5a5.25 5.25 0 0 0-5.25 5.25v3a3 3 0 0 0-3 3v6.75a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3v-6.75a3 3 0 0 0-3-3v-3c0-2.9-2.35-5.25-5.25-5.25Zm3.75 8.25v-3a3.75 3.75 0 1 0-7.5 0v3h7.5Z"
+										clipRule="evenodd"
+									/>
+								</svg>
+							</button>
+						</div>
 					)}
-					<button
+					{/* <button
 						data-collapse-toggle="navbar-sticky"
 						type="button"
 						className="inline-flex items-center p-2 w-10 h-10 justify-center text-sm text-white hover:bg-hover rounded-lg md:hidden focus:outline-none focus:ring-2 ring-accent2"
@@ -84,7 +104,7 @@ export default function Navbar() {
 								d="M1 1h15M1 7h15M1 13h15"
 							/>
 						</svg>
-					</button>
+					</button> */}
 				</div>
 				<div
 					className="items-center justify-between hidden w-full md:flex md:w-auto md:order-1"
