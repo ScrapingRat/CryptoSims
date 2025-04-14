@@ -5,62 +5,25 @@ import { useEffect, useState, useCallback } from 'react';
 import { getCookie } from 'cookies-next';
 import { useWallet } from 'app/contexts/WalletContext';
 import apiClient from 'lib/apiClient';
-// import { IOhlc } from '@models/ohlc';
 
 const Wallet = () => {
+	const [message, setMessage] = useState('');
+	const [error, setError] = useState('');
 	const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-	const { isUnlocked, setIsUnlocked, balanceFiat, balanceBtc, btcToFiat, fetchWallet } = useWallet();
-	// const [message, setMessage] = useState('');
-	// const [balanceFiat, setBalanceFiat] = useState<number | null>(null);
-	// const [balanceBtc, setBalanceBtc] = useState<number | null>(null);
-	// const [btcToFiat, setBtcToFiat] = useState(0);
-	// const [error, setError] = useState('');
-
-	// const fetchWallet = useCallback(async () => {
-	// 	try {
-	// 		interface WalletResponse {
-	// 			balanceFiat: number;
-	// 			balanceBtc: number;
-	// 		}
-
-	// 		const { data, error, refreshed, status } =
-	// 			await apiClient<WalletResponse>('api/getWallet');
-
-	// 		if (refreshed) {
-	// 			console.log('Token was refreshed during wallet fetch');
-	// 		}
-
-	// 		if (error) {
-	// 			console.error('Error fetching wallet:', error);
-
-	// 			if (status === 401) {
-	// 				setIsUnlocked(false);
-	// 			}
-
-	// 			return;
-	// 		}
-
-	// 		if (data) {
-	// 			setBalanceFiat(data.balanceFiat);
-	// 			setBalanceBtc(data.balanceBtc);
-	// 			const now = Math.floor(Date.now() / 1000);
-
-	// 			const ohlc = await apiClient<IOhlc>(
-	// 				`api/btc/value?date=${now}`,
-	// 				'GET'
-	// 			);
-
-	// 			if (ohlc.error) {
-	// 				console.error('Error fetching BTC price:', ohlc.error);
-	// 				return;
-	// 			}
-	// 			const usd = (ohlc?.data?.close || 0) * (data.balanceBtc || 0);
-	// 			setBtcToFiat(Math.round(usd * 100) / 100);
-	// 		}
-	// 	} catch (unexpectedError) {
-	// 		console.error('Unexpected error in fetchWallet:', unexpectedError);
-	// 	}
-	// }, [setBalanceFiat, setBalanceBtc, setIsUnlocked]);
+	const [isDepositing, setIsDepositing] = useState(false);
+	const [isBuying, setIsBuying] = useState(false);
+	const [depositAmount, setDepositAmount] = useState(0);
+	const [buyAmount, setBuyAmount] = useState(0);
+	const [isEditingAmount, setIsEditingAmount] = useState(false);
+	const [isEditingAmountBtc, setIsEditingAmountBtc] = useState(false);
+	const {
+		isUnlocked,
+		setIsUnlocked,
+		balanceFiat,
+		balanceBtc,
+		btcToFiat,
+		fetchWallet
+	} = useWallet();
 
 	const refreshWalletStatus = () => {
 		setIsUnlocked(true);
@@ -89,27 +52,6 @@ const Wallet = () => {
 		}
 	}, [isUnlocked, fetchWallet]);
 
-	// const handleLock = async () => {
-	// 	try {
-	// 		interface LockResponse {
-	// 			message: string;
-	// 		}
-	// 		const { data, error, errorMessage } = await apiClient<LockResponse>(
-	// 			'api/lock',
-	// 			'DELETE'
-	// 		);
-
-	// 		if (!error) {
-	// 			console.log(data?.message);
-	// 			setIsUnlocked(false);
-	// 		} else {
-	// 			console.log(errorMessage);
-	// 		}
-	// 	} catch (error) {
-	// 		console.error('Failed to lock wallet:', error);
-	// 	}
-	// };
-
 	const handleAuth = async () => {
 		try {
 			const unlocked_before = getCookie('unlocked_before');
@@ -133,33 +75,114 @@ const Wallet = () => {
 		}
 	};
 
+	const handleDeposit = async () => {
+		console.log(`Depositing ${depositAmount} USD`);
+
+		interface Response {
+			message: string;
+		}
+
+		setError('');
+		setMessage('');
+
+		const { data, error } = await apiClient<Response>(
+			`api/usd/inc?amount=${depositAmount}`,
+			'POST',
+			{
+				auth: true
+			}
+		);
+
+		if (error) {
+			setError(error);
+		} else {
+			setMessage(
+				data?.message ||
+					`Successfully increased USD by ${depositAmount}. New balance is ${
+						(balanceFiat || 0) + depositAmount
+					}.`
+			);
+		}
+		setIsDepositing(false);
+		await fetchWallet();
+	};
+
+	const handleBuy = async () => {
+		console.log(`Buying ${buyAmount} USD worth of BTC`);
+
+		interface Response {
+			message: string;
+		}
+
+		setError('');
+		setMessage('');
+
+		const { data, error } = await apiClient<Response>(
+			`api/btc/buy?amount=${buyAmount}`,
+			'POST',
+			{
+				auth: true
+			}
+		);
+
+		if (error) {
+			setError(error);
+		} else {
+			setMessage(
+				data?.message ||
+					`Successfully increased USD by ${depositAmount}. New balance is ${
+						(balanceFiat || 0) + depositAmount
+					}.`
+			);
+		}
+
+		setIsBuying(false);
+		await fetchWallet();
+	};
+
+	const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const value = Math.max(0, Math.min(50000, Number(e.target.value)));
+		setDepositAmount(value);
+	};
+
+	const handleAmountChangeBtc = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const value = Math.max(
+			0,
+			Math.min(balanceFiat || 0, Number(e.target.value))
+		);
+		setBuyAmount(value);
+	};
+
+	useEffect(() => {
+		if (error || message) {
+			const timer = setTimeout(() => {
+				setError('');
+				setMessage('');
+			}, 10000);
+
+			return () => clearTimeout(timer);
+		}
+	}, [error, message]);
+
+	useEffect(() => {
+		const handleClickOutside = () => {
+			setError('');
+			setMessage('');
+		};
+
+		document.addEventListener('click', handleClickOutside);
+
+		return () => {
+			document.removeEventListener('click', handleClickOutside);
+		};
+	}, []);
+
 	if (isCheckingAuth) {
 		return <p>Loading...</p>;
 	} else if (isUnlocked) {
 		return (
 			<div className="w-full max-w-md mx-auto">
 				<div className="p-6 border border-accent2 rounded-lg bg-background/50">
-					{/* <div className="grid grid-cols-3 items-center mb-4">
-						<div className="flex justify-end">
-							<button
-								onClick={fetchWallet}
-								className="p-2 bg-accent2 text-white rounded-lg hover:bg-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-								<svg
-									xmlns="http://www.w3.org/2000/svg"
-									fill="none"
-									viewBox="0 0 24 24"
-									strokeWidth={1.5}
-									stroke="currentColor"
-									className="size-5">
-									<path
-										strokeLinecap="round"
-										strokeLinejoin="round"
-										d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
-									/>
-								</svg>
-							</button>
-						</div>
-					</div> */}
 					{balanceFiat !== null && balanceBtc !== null ? (
 						<div className="space-y-4">
 							<div>
@@ -176,17 +199,255 @@ const Wallet = () => {
 										≃ {btcToFiat} USD
 									</span>
 								</p>
-							</div>
+								{!isBuying &&
+									(isDepositing === false ? (
+										<div className="mt-4 text-center flex">
+											<button
+												onClick={() =>
+													setIsDepositing(true)
+												}
+												type="button"
+												className="flex-1 py-3 px-4 bg-accent2 text-white rounded-lg hover:bg-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+												Deposit USD
+											</button>
+										</div>
+									) : (
+										<div className="mt-4">
+											{isEditingAmount ? (
+												<input
+													type="number"
+													value={depositAmount}
+													onChange={
+														handleAmountChange
+													}
+													onBlur={() =>
+														setIsEditingAmount(
+															false
+														)
+													}
+													className="text-center text-gray-400 block w-full mb-2 border border-gray-500 rounded-lg p-2 bg-gray-800"
+													min={0}
+													max={50000}
+												/>
+											) : (
+												<label
+													htmlFor="depositSlider"
+													className="text-gray-400 block text-center mb-2 cursor-pointer hover:text-yellow-300 bg-accent1 rounded-lg py-2 px-4"
+													onClick={() =>
+														setIsEditingAmount(true)
+													}>
+													Deposit Amount:{' '}
+													{depositAmount} USD
+												</label>
+											)}
 
-							{/* <div className="w-full max-w-md mx-auto space-y-8">
-								<div className="flex gap-4">
-									<button
-										onClick={handleLock}
-										className="flex-1 py-3 px-4 bg-accent2 text-white rounded-lg hover:bg-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-										Lock Wallet
-									</button>
-								</div>
-							</div> */}
+											<div className="flex items-center gap-4">
+												<button
+													onClick={() =>
+														setDepositAmount(
+															(prev) =>
+																Math.max(
+																	0,
+																	prev - 100
+																)
+														)
+													}
+													type="button"
+													className="py-1 px-2 w-8 md:py-2 md:px-4 md:w-12 bg-accent2 text-white rounded-lg hover:bg-red-700 transition-colors">
+													-
+												</button>
+
+												<input
+													id="depositSlider"
+													type="range"
+													min={0}
+													max={50000}
+													step={100}
+													value={depositAmount}
+													onChange={(e) =>
+														setDepositAmount(
+															Number(
+																e.target.value
+															)
+														)
+													}
+													className="w-full range"
+												/>
+
+												<button
+													onClick={() =>
+														setDepositAmount(
+															(prev) =>
+																Math.min(
+																	50000,
+																	prev + 100
+																)
+														)
+													}
+													type="button"
+													className="py-1 px-2 w-8 md:py-2 md:px-4 md:w-12 bg-accent2 text-white rounded-lg hover:bg-green-700 transition-colors">
+													+
+												</button>
+											</div>
+
+											<div className="flex justify-center gap-4 mt-4">
+												<button
+													onClick={() => {
+														setIsEditingAmount(
+															false
+														);
+														handleDeposit();
+														setDepositAmount(0);
+													}}
+													type="button"
+													className="py-2 px-4 bg-green-500 text-white rounded-lg hover:bg-green-700 transition-colors">
+													Confirm
+												</button>
+												<button
+													onClick={() => {
+														setIsDepositing(false);
+														setIsEditingAmount(
+															false
+														);
+														setDepositAmount(0);
+													}}
+													type="button"
+													className="py-2 px-4 bg-red-500 text-white rounded-lg hover:bg-red-700 transition-colors">
+													Cancel
+												</button>
+											</div>
+										</div>
+									))}
+
+								{!isDepositing &&
+									(isBuying === false ? (
+										<div className="mt-4 text-center flex">
+											<button
+												onClick={() =>
+													setIsBuying(true)
+												}
+												type="button"
+												className="flex-1 py-3 px-4 bg-accent2 text-white rounded-lg hover:bg-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+												Buy BTC
+											</button>
+										</div>
+									) : (
+										<div className="mt-4">
+											{isEditingAmountBtc ? (
+												<input
+													type="number"
+													value={buyAmount}
+													onChange={
+														handleAmountChangeBtc
+													}
+													onBlur={() =>
+														setIsEditingAmountBtc(
+															false
+														)
+													}
+													className="text-center text-gray-400 block w-full mb-2 border border-gray-500 rounded-lg p-2 bg-gray-800"
+													min={0}
+													max={balanceFiat}
+												/>
+											) : (
+												<label
+													htmlFor="BuySlider"
+													className="text-gray-400 block text-center mb-2 cursor-pointer hover:text-yellow-300 bg-accent1 rounded-lg py-2 px-4"
+													onClick={() =>
+														setIsEditingAmountBtc(
+															true
+														)
+													}>
+													Buy Amount: {buyAmount} USD
+												</label>
+											)}
+
+											<div className="flex items-center gap-4">
+												<button
+													onClick={() =>
+														setBuyAmount((prev) =>
+															Math.max(
+																0,
+																prev - 100
+															)
+														)
+													}
+													type="button"
+													className="py-1 px-2 w-8 md:py-2 md:px-4 md:w-12 bg-accent2 text-white rounded-lg hover:bg-red-700 transition-colors">
+													-
+												</button>
+
+												<input
+													id="buySlider"
+													type="range"
+													min={0}
+													max={balanceFiat}
+													step={100}
+													value={buyAmount}
+													onChange={(e) =>
+														setBuyAmount(
+															Number(
+																e.target.value
+															)
+														)
+													}
+													className="w-full range"
+												/>
+
+												<button
+													onClick={() =>
+														setBuyAmount((prev) =>
+															Math.min(
+																balanceFiat,
+																prev + 100
+															)
+														)
+													}
+													type="button"
+													className="py-1 px-2 w-8 md:py-2 md:px-4 md:w-12 bg-accent2 text-white rounded-lg hover:bg-green-700 transition-colors">
+													+
+												</button>
+											</div>
+
+											<div className="flex justify-center gap-4 mt-4">
+												<button
+													onClick={() => {
+														setIsEditingAmountBtc(
+															false
+														);
+														handleBuy();
+														setBuyAmount(0);
+													}}
+													type="button"
+													className="py-2 px-4 bg-green-500 text-white rounded-lg hover:bg-green-700 transition-colors">
+													Confirm
+												</button>
+												<button
+													onClick={() => {
+														setIsBuying(false);
+														setIsEditingAmountBtc(
+															false
+														);
+														setBuyAmount(0);
+													}}
+													type="button"
+													className="py-2 px-4 bg-red-500 text-white rounded-lg hover:bg-red-700 transition-colors">
+													Cancel
+												</button>
+											</div>
+										</div>
+									))}
+							</div>
+							{error && (
+								<p className="mt-2 text-sm text-red-500">
+									{error}
+								</p>
+							)}
+							{message && (
+								<p className="mt-2 text-sm text-green-500">
+									{message}
+								</p>
+							)}
 						</div>
 					) : (
 						<p className="text-gray-300">

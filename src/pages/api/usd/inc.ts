@@ -41,7 +41,40 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		}
 
 		const walletId = auth.walletId || 'null';
-		const { success, message } = await Wallet.incFiat(walletId, 500);
+		const wallet = await Wallet.findById(walletId);
+
+		if (!wallet) {
+			return res.status(401).json({ error: 'Wallet not found' });
+		}
+
+		const { amount } = req.query;
+
+		if (!amount) {
+			return res
+				.status(400)
+				.json({ error: 'Value parameter is required' });
+		}
+
+		const amountString = amount as string;
+		const decimalIndex = amountString.indexOf('.');
+
+		if (decimalIndex !== -1 && amountString.length - decimalIndex - 1 > 2) {
+			return res
+				.status(400)
+				.json({ error: 'Amount can have at most 2 decimals.' });
+		}
+
+		const amountFiat: number = parseFloat(amountString);
+
+		if (amountFiat < 10) {
+			return res.status(404).json({
+				error: 'The minimum valid amount for a transaction is 10 USD'
+			});
+		}
+
+		// const timestamp = new Date().getTime() / 1000;
+
+		const { success, message } = await Wallet.incFiat(walletId, amountFiat);
 
 		if (!success) {
 			return res.status(400).json({ error: message });

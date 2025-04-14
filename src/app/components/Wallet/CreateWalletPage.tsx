@@ -41,7 +41,6 @@ const CreateWalletPage = ({
 				await apiClient<CreateResponse>('api/create', 'POST', {
 					body: JSON.stringify({ seedPhrase })
 				});
-			// const result = await createWallet();
 
 			if (error) {
 				setError(error);
