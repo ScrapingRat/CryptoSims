@@ -8,9 +8,7 @@ docker run -d --name mongodb -p 27017:27017 mongo
 npm install
 NODE_OPTIONS='--inspect' npm run dev
 
-curl -L -o bitcoin-historical-data.zip https://www.kaggle.com/api/v1/datasets/download/mczielinski/bitcoin-historical-data
-unzip bitcoin-historical-data.zip
-mv *.csv data.csv
+curl -L -o bitcoin-historical-data.zip https://www.kaggle.com/api/v1/datasets/download/mczielinski/bitcoin-historical-data && unzip bitcoin-historical-data.zip && mv *.csv data.csv && rm bitcoin-historical-data.zip
 curl -X POST http://localhost:3000/api/update -H 'x-api-key: $API_KEY'
 curl -X POST http://localhost:3000/api/catchup -H 'x-api-key: $API_KEY'
 ```

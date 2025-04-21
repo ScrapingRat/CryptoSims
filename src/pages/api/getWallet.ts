@@ -41,7 +41,14 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		}
 
 		const walletId = auth.walletId;
+
 		const wallet = await Wallet.findById(walletId);
+
+		if (!walletId) {
+			return res.status(400).json({ error: 'Invalid wallet ID' });
+		}
+
+		const { netProfit, percentProfit } = await Wallet.diff(walletId);
 
 		if (!wallet) {
 			return res.status(401).json({ error: 'Wallet not found' });
@@ -50,8 +57,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		return res.status(200).json({
 			balanceFiat: wallet.balanceFiat,
 			balanceBtc: wallet.balanceBtc,
+			netProfit,
+			percentProfit,
 			historyFiat: wallet.purchaseFiat,
-			historyBtc: wallet.purchaseBtc
+			historyBtc: wallet.purchaseBtc,
 		});
 	} catch (error) {
 		res.status(401).json({ error: 'Authentication failed' });

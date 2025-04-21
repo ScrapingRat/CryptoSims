@@ -2,6 +2,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 import { ObjectId } from 'mongodb';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
+import Ohlc from './ohlc';
 
 interface IWallet extends Document {
 	seedPhrase: string;
@@ -9,7 +10,7 @@ interface IWallet extends Document {
 	balanceFiat: number;
 	balanceBtc: number;
 	purchaseFiat: [string, Date, number];
-	purchaseBtc: [string, Date, number];
+	purchaseBtc: [string, Date, number, number];
 	compareSeedPhrase(candidateSeedPhrase: string): Promise<boolean>;
 }
 
@@ -28,7 +29,8 @@ interface WalletModel extends mongoose.Model<IWallet> {
 	): { success: boolean; message: string; purchaseId: string };
 	incBtc(
 		walletId: string,
-		amount: number,
+		amountBtc: number,
+		amountFiat: number,
 		purchaseId?: string
 	): { success: boolean; message: string; purchaseId: string };
 	decBtc(
@@ -36,6 +38,7 @@ interface WalletModel extends mongoose.Model<IWallet> {
 		amount: number,
 		purchaseId?: string
 	): { success: boolean; message: string; purchaseId: string };
+	diff(walletId: string): { netProfit: number, percentProfit: number };
 }
 
 const WalletSchema = new Schema({
@@ -45,11 +48,18 @@ const WalletSchema = new Schema({
 		type: Number,
 		required: true,
 		default: 0,
-		min: [0, 'Balance cannot go below zero.']
+		min: [0, 'Balance cannot go below zero.'],
+		set: (v: number) => Math.round(v * 1e2) / 1e2
 	},
 	purchaseFiat: { type: Array, required: false },
-	balanceBtc: { type: Number, required: true, default: 0 },
-	purchaseBtc: { type: Array, required: false }
+	balanceBtc: {
+		type: Number,
+		required: true,
+		default: 0,
+		min: [0, 'Balance cannot go below zero.'],
+		set: (v: number) => Math.round(v * 1e8) / 1e8
+	},
+	purchaseBtc: { type: Array, required: false },
 });
 
 WalletSchema.index({ seedPhradeFingerprint: 1 });
@@ -123,6 +133,13 @@ WalletSchema.statics.incFiat = async function (
 		};
 	}
 
+	const wallet = await this.findById(walletId);
+
+	if (!wallet) {
+		console.error(`incFiat error: Wallet with ID ${walletId} not found.`);
+		return { success: false, message: `Wallet does not exist.` };
+	}
+
 	const date = new Date();
 
 	if (!purchaseId) {
@@ -132,7 +149,10 @@ WalletSchema.statics.incFiat = async function (
 	const updatedWallet = await this.findByIdAndUpdate(
 		walletId,
 		{
-			$inc: { balanceFiat: amount },
+			$set: {
+				balanceFiat:
+					Math.round((wallet.balanceFiat + amount) * 1e2) / 1e2
+			},
 			$push: { purchaseFiat: [purchaseId, date, amount] }
 		},
 		{ new: true, runValidators: true }
@@ -189,7 +209,10 @@ WalletSchema.statics.decFiat = async function (
 	const updatedWallet = await this.findByIdAndUpdate(
 		walletId,
 		{
-			$inc: { balanceFiat: -amount },
+			$set: {
+				balanceFiat:
+					Math.round((wallet.balanceFiat - amount) * 1e2) / 1e2
+			},
 			$push: { purchaseFiat: [purchaseId, date, -amount] }
 		},
 		{ new: true, runValidators: true, context: 'query' }
@@ -211,15 +234,23 @@ WalletSchema.statics.decFiat = async function (
 
 WalletSchema.statics.incBtc = async function (
 	walletId: string,
-	amount: number,
+	amountBtc: number,
+	amountFiat: number,
 	purchaseId: ObjectId
 ) {
-	if (amount < 0) {
-		console.error(`incBtc error: Negative amount attempted: ${amount}`);
+	if (amountBtc < 0) {
+		console.error(`incBtc error: Negative amount attempted: ${amountBtc}`);
 		return {
 			success: false,
 			message: 'Amount cannot be negative.'
 		};
+	}
+
+	const wallet = await this.findById(walletId);
+
+	if (!wallet) {
+		console.error(`incBtc error: Wallet with ID ${walletId} not found.`);
+		return { success: false, message: `Wallet does not exist.` };
 	}
 
 	const date = new Date();
@@ -231,8 +262,10 @@ WalletSchema.statics.incBtc = async function (
 	const updatedWallet = await this.findByIdAndUpdate(
 		walletId,
 		{
-			$inc: { balanceBtc: amount },
-			$push: { purchaseBtc: [purchaseId, date, amount] }
+			$set: {
+				balanceBtc: Math.round((wallet.balanceBtc + amountBtc) * 1e8) / 1e8
+			},
+			$push: { purchaseBtc: [purchaseId, date, amountBtc, amountFiat] }
 		},
 		{ new: true, runValidators: true }
 	);
@@ -246,7 +279,7 @@ WalletSchema.statics.incBtc = async function (
 
 	return {
 		success: true,
-		message: `Successfully increased BTC by ${amount}. New balance is ${updatedWallet.balanceBtc}.`,
+		message: `Successfully increased BTC by ${amountBtc}. New balance is ${updatedWallet.balanceBtc}.`,
 		purchaseId
 	};
 };
@@ -257,7 +290,7 @@ WalletSchema.statics.decBtc = async function (
 	purchaseId: ObjectId
 ) {
 	if (amount < 0) {
-		console.error(`incBtc error: Negative amount attempted: ${amount}`);
+		console.error(`decBtc error: Negative amount attempted: ${amount}`);
 		return {
 			success: false,
 			message: 'Amount cannot be negative.'
@@ -287,7 +320,9 @@ WalletSchema.statics.decBtc = async function (
 	const updatedWallet = await this.findByIdAndUpdate(
 		walletId,
 		{
-			$inc: { balanceBtc: -amount },
+			$set: {
+				balanceBtc: Math.round((wallet.balanceBtc - amount) * 1e8) / 1e8
+			},
 			$push: { purchaseBtc: [purchaseId, date, -amount] }
 		},
 		{ new: true, runValidators: true, context: 'query' }
@@ -305,6 +340,29 @@ WalletSchema.statics.decBtc = async function (
 		message: `Successfully decreased BTC by ${amount}. New balance is ${updatedWallet.balanceBtc}.`,
 		purchaseId
 	};
+};
+
+WalletSchema.statics.diff = async function (walletId: string) {
+	const wallet = await this.findById(walletId);
+
+	let totalFiatSpent = 0;
+
+	for (const [, , ,fiatAmount] of wallet.purchaseBtc || []) {
+		totalFiatSpent += fiatAmount;
+	}
+
+	const timestamp = Date.now() / 1000;
+
+	const data = await Ohlc.findByTimestamp(timestamp);
+
+	const btcValue = Math.round(((data?.close || 0) * wallet.balanceBtc) * 1e2) / 1e2;
+	const netProfit = btcValue - totalFiatSpent;
+	const percentProfit = (netProfit / totalFiatSpent) * 100;
+
+	return {
+		netProfit: Math.round(netProfit * 1e2) / 1e2,
+		percentProfit: Math.round(percentProfit * 1e2) / 1e2
+	}
 };
 
 const Wallet =

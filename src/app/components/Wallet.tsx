@@ -12,8 +12,8 @@ const Wallet = () => {
 	const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 	const [isDepositing, setIsDepositing] = useState(false);
 	const [isBuying, setIsBuying] = useState(false);
-	const [depositAmount, setDepositAmount] = useState(0);
-	const [buyAmount, setBuyAmount] = useState(0);
+	const [depositAmount, setDepositAmount] = useState<number | ''>(0);
+	const [buyAmount, setBuyAmount] = useState<number | ''>(0);
 	const [isEditingAmount, setIsEditingAmount] = useState(false);
 	const [isEditingAmountBtc, setIsEditingAmountBtc] = useState(false);
 	const {
@@ -22,6 +22,8 @@ const Wallet = () => {
 		balanceFiat,
 		balanceBtc,
 		btcToFiat,
+		netProfit,
+		percentProfit,
 		fetchWallet
 	} = useWallet();
 
@@ -85,21 +87,21 @@ const Wallet = () => {
 		setError('');
 		setMessage('');
 
-		const { data, error } = await apiClient<Response>(
+		const { data, error, errorMessage } = await apiClient<Response>(
 			`api/usd/inc?amount=${depositAmount}`,
 			'POST',
 			{
-				auth: true
+				auth: true,
 			}
 		);
 
 		if (error) {
-			setError(error);
+			setError(`${error}: ${errorMessage}`);
 		} else {
 			setMessage(
 				data?.message ||
 					`Successfully increased USD by ${depositAmount}. New balance is ${
-						(balanceFiat || 0) + depositAmount
+						(balanceFiat || 0) + (depositAmount || 0)
 					}.`
 			);
 		}
@@ -117,7 +119,7 @@ const Wallet = () => {
 		setError('');
 		setMessage('');
 
-		const { data, error } = await apiClient<Response>(
+		const { data, error, errorMessage } = await apiClient<Response>(
 			`api/btc/buy?amount=${buyAmount}`,
 			'POST',
 			{
@@ -126,12 +128,12 @@ const Wallet = () => {
 		);
 
 		if (error) {
-			setError(error);
+			setError(`${error}: ${errorMessage}`);
 		} else {
 			setMessage(
 				data?.message ||
 					`Successfully increased USD by ${depositAmount}. New balance is ${
-						(balanceFiat || 0) + depositAmount
+						(balanceFiat || 0) + (depositAmount || 0)
 					}.`
 			);
 		}
@@ -141,15 +143,21 @@ const Wallet = () => {
 	};
 
 	const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const value = Math.max(0, Math.min(50000, Number(e.target.value)));
+		const value =
+			e.target.value === ''
+				? ''
+				: Math.max(0, Math.min(50000, Number(e.target.value)));
 		setDepositAmount(value);
 	};
 
 	const handleAmountChangeBtc = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const value = Math.max(
-			0,
-			Math.min(balanceFiat || 0, Number(e.target.value))
-		);
+		const value =
+			e.target.value === ''
+				? ''
+				: Math.max(
+						0,
+						Math.min(balanceFiat || 0, Number(e.target.value))
+				  );
 		setBuyAmount(value);
 	};
 
@@ -192,11 +200,22 @@ const Wallet = () => {
 								<p className="text-l font-bold text-white text-center">
 									{balanceFiat} USD
 								</p>
-								<p className="text-l font-bold text-white text-center">
+								<p
+									className={`text-l font-bold text-center ${
+										netProfit > 0
+											? 'text-green-500'
+											: netProfit < 0
+											? 'text-red-500'
+											: 'text-white'
+									}`}>
 									{balanceBtc} BTC
 									<span className="text-xs opacity-50">
 										{' '}
-										≃ {btcToFiat} USD
+										≃ {btcToFiat} USD (
+											{netProfit >= 0 && ('+')}
+											{netProfit} USD /{' '}
+											{netProfit >= 0 && ('+')}
+											{percentProfit}%)
 									</span>
 								</p>
 								{!isBuying &&
@@ -225,6 +244,12 @@ const Wallet = () => {
 															false
 														)
 													}
+													onFocus={() => {
+														if (depositAmount === 0)
+															setDepositAmount(
+																''
+															);
+													}}
 													className="text-center text-gray-400 block w-full mb-2 border border-gray-500 rounded-lg p-2 bg-gray-800"
 													min={0}
 													max={50000}
@@ -248,7 +273,8 @@ const Wallet = () => {
 															(prev) =>
 																Math.max(
 																	0,
-																	prev - 100
+																	(prev ||
+																		0) - 100
 																)
 														)
 													}
@@ -280,7 +306,8 @@ const Wallet = () => {
 															(prev) =>
 																Math.min(
 																	50000,
-																	prev + 100
+																	(prev ||
+																		0) + 100
 																)
 														)
 													}
@@ -345,6 +372,10 @@ const Wallet = () => {
 															false
 														)
 													}
+													onFocus={() => {
+														if (buyAmount === 0)
+															setBuyAmount('');
+													}}
 													className="text-center text-gray-400 block w-full mb-2 border border-gray-500 rounded-lg p-2 bg-gray-800"
 													min={0}
 													max={balanceFiat}
@@ -368,7 +399,8 @@ const Wallet = () => {
 														setBuyAmount((prev) =>
 															Math.max(
 																0,
-																prev - 100
+																(prev || 0) -
+																	100
 															)
 														)
 													}
@@ -399,7 +431,8 @@ const Wallet = () => {
 														setBuyAmount((prev) =>
 															Math.min(
 																balanceFiat,
-																prev + 100
+																(prev || 0) +
+																	100
 															)
 														)
 													}

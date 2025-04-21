@@ -71,7 +71,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 			const data: IOhlc | null = await Ohlc.findByTimestamp(timestamp);
 
 			if (!data) {
-				return res.status(404).json({
+				return res.status(400).json({
 					error: 'No data found',
 					message: 'No OHLC data found for the specified timestamp'
 				});
@@ -83,7 +83,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 			let timestampTo: number;
 
 			try {
-				if (/^\d+$/.test(date as string)) {
+				if ((/^\d+$/.test(from as string)) && (/^\d+$/.test(to as string))) {
 					timestampFrom = parseInt(from as string, 10);
 					timestampTo = parseInt(to as string, 10);
 				} else {
@@ -126,7 +126,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 			);
 
 			if (!data) {
-				return res.status(404).json({
+				return res.status(400).json({
 					error: 'No data found',
 					message: 'No OHLC data found for the specified timestamp'
 				});

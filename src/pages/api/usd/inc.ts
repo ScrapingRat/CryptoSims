@@ -67,7 +67,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		const amountFiat: number = parseFloat(amountString);
 
 		if (amountFiat < 10) {
-			return res.status(404).json({
+			return res.status(400).json({
 				error: 'The minimum valid amount for a transaction is 10 USD'
 			});
 		}

@@ -68,13 +68,13 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		const amountBtc: number = parseFloat(amountString);
 
 		if (wallet.balanceBtc < amountBtc) {
-			return res.status(404).json({
+			return res.status(400).json({
 				error: 'Insufficient balance'
 			});
 		}
 
 		if (amountBtc < 0.0001) {
-			return res.status(404).json({
+			return res.status(400).json({
 				error: 'The minimum valid amount for a transaction is 0.0001 BTC'
 			});
 		}
@@ -83,7 +83,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		const data: IOhlc | null = await Ohlc.findByTimestamp(timestamp);
 
 		if (!data) {
-			return res.status(404).json({
+			return res.status(400).json({
 				error: 'No data found',
 				message: 'No OHLC data found for the specified timestamp'
 			});
@@ -96,18 +96,18 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		}
 
 		const fiatAmount = data.close * amountBtc;
-		const roundedFiatAmount = Math.round(fiatAmount * 100) / 100;
 
 		const fiatInc = await Wallet.incFiat(
 			walletId,
-			roundedFiatAmount,
+			fiatAmount,
 			btcDec.purchaseId
 		);
 
 		if (!fiatInc.success) {
 			const { success, message } = await Wallet.incBtc(
 				walletId,
-				amountBtc
+				amountBtc,
+				fiatAmount
 			);
 
 			if (!success) {
@@ -119,7 +119,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		}
 
 		return res.status(200).json({
-			message: `Purchased ${roundedFiatAmount} USD for ${amountBtc} BTC`
+			message: `Purchased ${fiatAmount} USD for ${amountBtc} BTC`
 		});
 	} catch (error) {
 		res.status(401).json({ error });

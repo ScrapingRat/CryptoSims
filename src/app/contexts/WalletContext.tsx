@@ -16,6 +16,8 @@ type WalletContextType = {
 	balanceFiat: number | null;
 	balanceBtc: number | null;
 	btcToFiat: number;
+	netProfit: number;
+	percentProfit: number;
 	fetchWallet: () => Promise<void>;
 };
 
@@ -26,12 +28,16 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 	const [balanceFiat, setBalanceFiat] = useState<number | null>(null);
 	const [balanceBtc, setBalanceBtc] = useState<number | null>(null);
 	const [btcToFiat, setBtcToFiat] = useState(0);
+	const [netProfit, setNetProfit] = useState(0);
+	const [percentProfit, setPercentProfit] = useState(0);
 
 	const fetchWallet = useCallback(async () => {
 		try {
 			interface WalletResponse {
 				balanceFiat: number;
 				balanceBtc: number;
+				netProfit: number;
+				percentProfit: number;
 			}
 
 			const { data, error, refreshed, status } =
@@ -54,6 +60,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 			if (data) {
 				setBalanceFiat(data.balanceFiat);
 				setBalanceBtc(data.balanceBtc);
+				setNetProfit(data.netProfit);
+				setPercentProfit(data.percentProfit);
 				const now = Math.floor(Date.now() / 1000);
 
 				const ohlc = await apiClient<IOhlc>(
@@ -81,6 +89,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 				balanceFiat,
 				balanceBtc,
 				btcToFiat,
+				netProfit,
+				percentProfit,
 				fetchWallet
 			}}>
 			{children}

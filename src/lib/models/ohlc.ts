@@ -56,7 +56,7 @@ OhlcSchema.statics.findByRange = async function (
 };
 
 const Ohlc =
-	(mongoose.models.Ohlc as OhlcModel) ||
+	(mongoose.models?.Ohlc as OhlcModel) ||
 	mongoose.model<IOhlc, OhlcModel>('Ohlc', OhlcSchema);
 
 export default Ohlc;
