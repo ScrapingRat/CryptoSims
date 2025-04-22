@@ -2,6 +2,7 @@
 
 import Header from './components/Header';
 import Wallet from './components/Wallet';
+import Graph from './components/Graph';
 import { useWallet } from './contexts/WalletContext';
 
 export default function Home() {
@@ -13,6 +14,7 @@ export default function Home() {
 					<div className="flex flex-col items-center justify-between gap-4">
 						{!isUnlocked && <Header />}
 						<Wallet />
+						<Graph />
 					</div>
 				</div>
 			</div>
