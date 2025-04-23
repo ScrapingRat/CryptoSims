@@ -13,6 +13,8 @@ export interface IOhlc {
 	volume: number;
 }
 
+type CandleTuple = [number, number, number, number];
+
 const ranges = [
 	{ label: '30 mins', value: 30 * 60, interval: 60 },
 	{ label: '24 hours', value: 24 * 60 * 60, interval: 300 },
@@ -25,11 +27,10 @@ const ranges = [
 const FIRST_OHLC_TIMESTAMP = 1325412060;
 
 const Graph = () => {
-	const [data, setData] = useState<any[]>([]);
-	const [allTimeData, setAllTimeData] = useState<{ candles: any[]; xAxisData: any[] } | null>(null);
+	const [data, setData] = useState<CandleTuple[]>([]);
+	const [allTimeData, setAllTimeData] = useState<{ candles: CandleTuple[]; xAxisData: string[] } | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [selectedRange, setSelectedRange] = useState<number | null>(ranges[0].value);
-
 	const [option, setOption] = useState<any>({
 		title: {
 			text: 'BTC/USD',
@@ -109,6 +110,8 @@ const Graph = () => {
 		backgroundColor: '#0a0a0a'
 	});
 
+	type EChartsOption = typeof option;
+
 	useEffect(() => {
 		const fetchAllTimeData = async () => {
 			setLoading(true);
@@ -116,8 +119,8 @@ const Graph = () => {
 			const res = await fetch(
 				`/api/btc/value?from=${FIRST_OHLC_TIMESTAMP}&to=${end}&interval=2592000`
 			);
-			let candles: any[] = [];
-			let xAxisData: any[] = [];
+			let candles: CandleTuple[] = [];
+			let xAxisData: string[] = [];
 			if (res.ok) {
 				const data: IOhlc[] = await res.json();
 				candles = data.map((d) => [d.open, d.close, d.low, d.high]);
@@ -146,7 +149,7 @@ const Graph = () => {
 			if (rangeObj.label === 'All time') {
 				if (allTimeData) {
 					setData(allTimeData.candles);
-					setOption((prev: any) => ({
+					setOption((prev: EChartsOption) => ({
 						...prev,
 						xAxis: { ...prev.xAxis, data: allTimeData.xAxisData },
 						series: [{ ...prev.series[0], data: allTimeData.candles }]
@@ -169,8 +172,8 @@ const Graph = () => {
 			const res = await fetch(
 				`/api/btc/value?from=${start}&to=${end}&interval=${interval}`
 			);
-			let candles: any[] = [];
-			let xAxisData: any[] = [];
+			let candles: CandleTuple[] = [];
+			let xAxisData: string[] = [];
 			if (res.ok) {
 				const data: IOhlc[] = await res.json();
 				candles = data.map((d) => [d.open, d.close, d.low, d.high]);
@@ -180,7 +183,7 @@ const Graph = () => {
 			}
 			if (!cancelled) {
 				setData(candles);
-				setOption((prev: any) => ({
+				setOption((prev: EChartsOption) => ({
 					...prev,
 					xAxis: { ...prev.xAxis, data: xAxisData },
 					series: [{ ...prev.series[0], data: candles }]
