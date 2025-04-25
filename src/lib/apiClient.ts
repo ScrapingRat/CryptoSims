@@ -77,7 +77,9 @@ const apiClient = async <T>(
 			return {
 				error: 'Invalid request',
 				errorMessage:
-					data.error || 'The request contains invalid data',
+					data.message ||
+					data.error ||
+					'The request contains invalid data',
 				status: 400,
 				refreshed: false
 			};
@@ -143,11 +145,14 @@ const apiClient = async <T>(
 			const data = await response.json();
 
 			if (!response.ok) {
+				console.log('error', data.error);
+				console.log('message', data.message);
 				return {
 					error:
 						data.error ||
 						`Request failed with status: ${response.status}`,
-					errorMessage: data.message,
+					// errorMessage: data.message,
+					errorMessage: data.error,
 					status: response.status,
 					refreshed
 				};

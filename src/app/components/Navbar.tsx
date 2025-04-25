@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useWallet } from 'app/contexts/WalletContext';
 import apiClient from 'lib/apiClient';
+import Image from 'next/image';
 
 export default function Navbar() {
 	const { isUnlocked, setIsUnlocked, fetchWallet } = useWallet();
@@ -34,6 +35,12 @@ export default function Navbar() {
 				<Link
 					href="/"
 					className="flex items-center space-x-3 rtl:space-x-reverse">
+					<Image
+						src="/cryptosims.png"
+						alt="Cryptosims"
+						width={30}
+						height={30}
+					/>
 					<span className="self-center text-2xl font-semibold whitespace-nowrap dark:text-white">
 						CryptoSims
 					</span>

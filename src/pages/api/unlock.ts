@@ -11,7 +11,7 @@ import seedBodySchema from '@schemas/seedBodySchema';
 const { SECRET_KEY, SECRET_KEY_REFRESH } = getConfig();
 const ROUTE_ENABLED = true;
 
-const ACCESS_TOKEN_EXPIRY = 10;
+const ACCESS_TOKEN_EXPIRY = 1;
 // const ACCESS_TOKEN_EXPIRY = 15 * 60;
 const REFRESH_TOKEN_EXPIRY = 7 * 24 * 60 * 60;
 
@@ -45,11 +45,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
 		const dbConnected = await connectToDatabase();
 
-		if (!dbConnected.success)
-		{
+		if (!dbConnected.success) {
 			return res.status(500).json({
 				error: 'Connection to the database failed'
-			})
+			});
 		}
 
 		const { seedPhrase } = bodyValidation.data;

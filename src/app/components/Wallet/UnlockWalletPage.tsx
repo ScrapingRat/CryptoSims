@@ -33,6 +33,7 @@ const UnlockWalletPage = ({
 
 			const { data, error, errorMessage } =
 				await apiClient<UnlockResponse>('api/unlock', 'POST', {
+					auth: false,
 					body: JSON.stringify({ seedPhrase })
 				});
 
@@ -89,7 +90,9 @@ const UnlockWalletPage = ({
 							required
 						/>
 						{loading && (
-							<p className='mt-2 text-sm text-yellow-500'>Unlocking wallet...</p>
+							<p className="mt-2 text-sm text-yellow-500">
+								Unlocking wallet...
+							</p>
 						)}
 						{error && (
 							<p className="mt-2 text-sm text-red-500">{error}</p>

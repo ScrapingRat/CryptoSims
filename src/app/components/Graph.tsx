@@ -27,15 +27,25 @@ const ranges = [
 const FIRST_OHLC_TIMESTAMP = 1325412060;
 
 const Graph = () => {
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	const [data, setData] = useState<CandleTuple[]>([]);
-	const [allTimeData, setAllTimeData] = useState<{ candles: CandleTuple[]; xAxisData: string[] } | null>(null);
+	const [allTimeData, setAllTimeData] = useState<{
+		candles: CandleTuple[];
+		xAxisData: string[];
+	} | null>(null);
 	const [loading, setLoading] = useState(true);
-	const [selectedRange, setSelectedRange] = useState<number | null>(ranges[0].value);
+	const [selectedRange, setSelectedRange] = useState<number | null>(
+		ranges[0].value
+	);
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const [option, setOption] = useState<any>({
 		title: {
+			show: window.innerWidth < 600 ? false : true,
 			text: 'BTC/USD',
 			left: 'left',
-			textStyle: { color: '#fff' }
+			textStyle: {
+				color: '#fff'
+			}
 		},
 		tooltip: {
 			trigger: 'axis',
@@ -55,12 +65,15 @@ const Graph = () => {
 			max: 'dataMax',
 			axisLabel: {
 				show: window.innerWidth < 600 ? false : true,
-				color: '#ccc',
+				color: '#ccc'
 			}
 		},
 		yAxis: {
 			scale: true,
-			splitArea: { show: true, areaStyle: { color: ['#111', '#0a0a0a'] } },
+			splitArea: {
+				show: true,
+				areaStyle: { color: ['#111', '#0a0a0a'] }
+			},
 			axisLabel: {
 				inside: window.innerWidth < 600 ? true : false,
 				margin: window.innerWidth < 600 ? 0 : 10,
@@ -73,7 +86,8 @@ const Graph = () => {
 		grid: {
 			left: window.innerWidth < 600 ? 0 : '10%',
 			right: window.innerWidth < 600 ? 12 : '10%',
-			bottom: '15%'
+			bottom: window.innerWidth < 600 ? 40 : '15%',
+			top: window.innerWidth < 600 ? 24 : 60
 		},
 		dataZoom: [
 			{ type: 'inside', start: 0, end: 100 },
@@ -152,7 +166,9 @@ const Graph = () => {
 					setOption((prev: EChartsOption) => ({
 						...prev,
 						xAxis: { ...prev.xAxis, data: allTimeData.xAxisData },
-						series: [{ ...prev.series[0], data: allTimeData.candles }]
+						series: [
+							{ ...prev.series[0], data: allTimeData.candles }
+						]
 					}));
 					setLoading(false);
 				} else {
@@ -203,7 +219,7 @@ const Graph = () => {
 				{ranges.map((r) => (
 					<button
 						key={r.label}
-						className={`px-3 py-1 rounded border text-xs ${
+						className={`px-3 py-1 rounded border text-xs hover:bg-accent1 ${
 							selectedRange === r.value
 								? 'bg-accent2 text-white'
 								: 'bg-background border-accent2 text-accent2'
