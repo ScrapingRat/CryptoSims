@@ -15,6 +15,7 @@ export default function Home() {
 						{!isUnlocked && <Header />}
 						<Wallet />
 						{/* <Graph /> */}
+						{/* {isUnlocked && <History />} */}
 					</div>
 				</div>
 			</div>

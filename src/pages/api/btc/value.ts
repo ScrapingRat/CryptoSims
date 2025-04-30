@@ -2,7 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { PipelineStage } from 'mongoose';
 import Ohlc, { IOhlc } from '@models/ohlc';
 import connectToDatabase from '@actions/connectToDatabase';
-import authorizeToken from 'lib/authorizeToken';
+// import authorizeToken from 'lib/authorizeToken';
 import { getMethodSchema } from '@schemas/methodSchema';
 
 const ROUTE_ENABLED = true;
@@ -43,9 +43,20 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         const { date, from, to, interval } = req.query;
 
         if (!date && !from && !to) {
-            return res
-                .status(400)
-                .json({ error: 'Date parameter is required' });
+            const data: IOhlc | null = await Ohlc.findLast();
+
+            if (!data) {
+                return res.status(400).json({
+                    error: 'No data found',
+                    message: 'No OHLC data found for the specified timestamp'
+                });
+            }
+
+            return res.status(200).json(data?.close);
+
+            // return res
+            //     .status(400)
+            //     .json({ error: 'Date parameter is required' });
         }
 
         if (date && !from && !to) {

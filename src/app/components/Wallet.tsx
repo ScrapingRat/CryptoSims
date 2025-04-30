@@ -1,7 +1,7 @@
 'use client';
 
 import NoWalletPage from './Wallet/NoWalletPage';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { getCookie } from 'cookies-next';
 import { useWallet } from 'app/contexts/WalletContext';
 import apiClient from 'lib/apiClient';
@@ -15,8 +15,11 @@ const Wallet = () => {
 	const [isBuying, setIsBuying] = useState(false);
 	const [depositAmount, setDepositAmount] = useState<number | ''>(0);
 	const [buyAmount, setBuyAmount] = useState<number | ''>(0);
+	const [limitPrice, setLimitPrice] = useState<number | ''>(0);
 	const [isEditingAmount, setIsEditingAmount] = useState(false);
 	const [isEditingAmountBtc, setIsEditingAmountBtc] = useState(false);
+	const [isEditingTarget, setIsEditingTarget] = useState(false);
+	const [order, setOrder] = useState('market');
 	const {
 		isUnlocked,
 		setIsUnlocked,
@@ -27,6 +30,9 @@ const Wallet = () => {
 		percentProfit,
 		fetchWallet
 	} = useWallet();
+	const depositInputRef = useRef<HTMLInputElement>(null);
+	const buyInputRef = useRef<HTMLInputElement>(null);
+	const targetInputRef = useRef<HTMLInputElement>(null);
 
 	const refreshWalletStatus = () => {
 		setIsUnlocked(true);
@@ -76,6 +82,14 @@ const Wallet = () => {
 		} catch (error) {
 			console.error(error);
 		}
+	};
+
+	const setLimitPriceCurrent = async () => {
+		const data = await apiClient('api/btc/value', 'GET');
+		const price = await data.data;
+
+		setLimitPrice(typeof price === 'number' ? price : 0);
+		//ERROR HANDLING?
 	};
 
 	const handleDeposit = async () => {
@@ -147,7 +161,13 @@ const Wallet = () => {
 		const value =
 			e.target.value === ''
 				? ''
-				: Math.max(0, Math.min(50000, Number(e.target.value)));
+				: Math.max(
+						0,
+						Math.min(
+							50000,
+							Number(Number(e.target.value).toFixed(2))
+						)
+				  );
 		setDepositAmount(value);
 	};
 
@@ -157,9 +177,28 @@ const Wallet = () => {
 				? ''
 				: Math.max(
 						0,
-						Math.min(balanceFiat || 0, Number(e.target.value))
+						Math.min(
+							balanceFiat || 0,
+							Number(Number(e.target.value).toFixed(2))
+						)
 				  );
 		setBuyAmount(value);
+	};
+
+	const handleAmountChangeTarget = (
+		e: React.ChangeEvent<HTMLInputElement>
+	) => {
+		const value =
+			e.target.value === ''
+				? ''
+				: Math.max(
+						0,
+						Math.min(
+							200000,
+							Number(Number(e.target.value).toFixed(2))
+						)
+				  );
+		setLimitPrice(value);
 	};
 
 	useEffect(() => {
@@ -233,7 +272,7 @@ const Wallet = () => {
 									</p>
 								</div>
 								{isDepositing === false ? (
-									<div className="mt-4 text-center flex">
+									<div className="mt-3 text-center flex">
 										<button
 											onClick={() =>
 												setIsDepositing(true)
@@ -244,36 +283,78 @@ const Wallet = () => {
 										</button>
 									</div>
 								) : (
-									<div className="mt-4">
+									<div className="mt-3">
 										{isEditingAmount ? (
 											<input
+												ref={depositInputRef}
 												type="number"
 												value={depositAmount}
 												onChange={handleAmountChange}
-												onBlur={() =>
-													setIsEditingAmount(false)
-												}
+												onBlur={() => {
+													if (depositAmount === '') {
+														setDepositAmount(0);
+													}
+													setIsEditingAmount(false);
+												}}
 												onFocus={() => {
 													if (depositAmount === 0)
 														setDepositAmount('');
 												}}
-												className="text-center text-gray-400 block w-full mb-2 border border-gray-500 rounded-lg p-2 bg-gray-800"
+												className="font-medium flex-1 py-3 px-4 text-center text-gray-400 block w-full rounded-lg bg-gray-900"
 												min={0}
 												max={50000}
+												onKeyDown={(e) => {
+													if (
+														e.key === 'Enter' ||
+														e.key === ' '
+													) {
+														setIsEditingAmount(
+															false
+														);
+														if (
+															depositAmount === ''
+														) {
+															setDepositAmount(0);
+														}
+														e.preventDefault();
+													}
+												}}
 											/>
 										) : (
-											<label
-												htmlFor="depositSlider"
-												className="text-gray-400 block text-center mb-2 cursor-pointer hover:text-yellow-300 bg-accent1 rounded-lg py-2 px-4"
-												onClick={() =>
-													setIsEditingAmount(true)
-												}>
-												Deposit Amount: {depositAmount}{' '}
-												USD
-											</label>
+											<div>
+												<label
+													htmlFor="DepositSlider"
+													className="text-gray-400 block text-center mb-0 cursor-pointer hover:text-yellow-300 bg-accent1 hover:bg-gray-900 rounded-lg py-3 px-4"
+													onClick={() => {
+														setIsEditingAmount(
+															true
+														);
+														setTimeout(() => {
+															depositInputRef.current?.focus();
+														}, 0);
+													}}
+													onKeyDown={(e) => {
+														if (
+															e.key === 'Enter' ||
+															e.key === ' '
+														) {
+															setIsEditingAmount(
+																true
+															);
+															setTimeout(() => {
+																depositInputRef.current?.focus();
+															}, 0);
+															e.preventDefault();
+														}
+													}}
+													tabIndex={0}>
+													Deposit Amount:{' '}
+													{depositAmount} USD
+												</label>
+											</div>
 										)}
 
-										<div className="flex items-center gap-4">
+										<div className="flex items-center gap-4 mt-3">
 											<button
 												onClick={() =>
 													setDepositAmount((prev) =>
@@ -284,7 +365,7 @@ const Wallet = () => {
 													)
 												}
 												type="button"
-												className="py-1 px-2 w-8 md:py-2 md:px-4 md:w-12 bg-accent2 text-white rounded-lg hover:bg-red-700 transition-colors">
+												className="md:mt-1 md:mb-1 py-1 px-2 w-8 md:py-2 md:px-4 md:w-12 bg-accent2 text-white rounded-lg hover:bg-red-700 transition-colors">
 												-
 											</button>
 
@@ -313,12 +394,12 @@ const Wallet = () => {
 													)
 												}
 												type="button"
-												className="py-1 px-2 w-8 md:py-2 md:px-4 md:w-12 bg-accent2 text-white rounded-lg hover:bg-green-700 transition-colors">
+												className="md:mt-1 md:mb-1 py-1 px-2 w-8 md:py-2 md:px-4 md:w-12 bg-accent2 text-white rounded-lg hover:bg-green-700 transition-colors">
 												+
 											</button>
 										</div>
 
-										<div className="flex justify-center gap-4 mt-4">
+										<div className="flex justify-center gap-3 mt-3">
 											<button
 												onClick={() => {
 													setIsEditingAmount(false);
@@ -326,7 +407,7 @@ const Wallet = () => {
 													setDepositAmount(0);
 												}}
 												type="button"
-												className="font-medium py-2 px-4 bg-green-500/50 text-white rounded-lg hover:bg-green-600/75 transition-colors">
+												className="w-full font-medium py-3 px-4 bg-green-500/75 text-white rounded-lg hover:bg-green-600/75 transition-colors">
 												Confirm
 											</button>
 											<button
@@ -336,7 +417,7 @@ const Wallet = () => {
 													setDepositAmount(0);
 												}}
 												type="button"
-												className="font-medium py-2 px-4 bg-red-500/75 text-white rounded-lg hover:bg-red-600/75 transition-colors">
+												className="w-full font-medium py-3 px-4 bg-red-500/75 text-white rounded-lg hover:bg-red-600/75 transition-colors">
 												Cancel
 											</button>
 										</div>
@@ -361,10 +442,10 @@ const Wallet = () => {
 					</div>
 					<div className="flex-1 p-6 border border-accent2 rounded-lg bg-background/50">
 						<div className="mb-3 lg:mb-10">
-							{/* <BinanceTicker /> */}
+							<BinanceTicker />
 						</div>
 						{isBuying === false ? (
-							<div className="text-center flex flex-row md:gap-4 gap-6 mt-0 md:mt-10 lg:mt-0">
+							<div className="text-center flex flex-row gap-3 mt-0 md:mt-9 lg:mt-0">
 								<button
 									onClick={() => setIsBuying(true)}
 									type="button"
@@ -379,35 +460,175 @@ const Wallet = () => {
 								</button>
 							</div>
 						) : (
-							<div className="mt-4">
-								{isEditingAmountBtc ? (
-									<input
-										type="number"
-										value={buyAmount}
-										onChange={handleAmountChangeBtc}
-										onBlur={() =>
-											setIsEditingAmountBtc(false)
-										}
-										onFocus={() => {
-											if (buyAmount === 0)
-												setBuyAmount('');
+							<div>
+								<div className="flex w-full gap-3 mt-0 md:mt-9">
+									<button
+										onClick={() => {
+											setOrder('market');
+											setIsEditingTarget(false);
 										}}
-										className="text-center text-gray-400 block w-full mb-2 border border-gray-500 rounded-lg p-2 bg-gray-800"
-										min={0}
-										max={balanceFiat || 0}
-									/>
-								) : (
-									<label
-										htmlFor="BuySlider"
-										className="text-gray-400 block text-center mb-2 cursor-pointer hover:text-yellow-300 bg-accent1 rounded-lg py-2 px-4"
-										onClick={() =>
-											setIsEditingAmountBtc(true)
-										}>
-										Buy Amount: {buyAmount} USD
-									</label>
+										type="button"
+										className={`font-medium flex-1 py-3 px-4 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+											order === 'market'
+												? 'bg-accent4'
+												: 'bg-accent2 hover:bg-accent3'
+										}`}>
+										Market
+									</button>
+									<button
+										onClick={() => {
+											setOrder('limit');
+											setLimitPrice(0);
+											setLimitPriceCurrent();
+										}}
+										type="button"
+										className={`font-medium flex-1 py-3 px-4 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+											order === 'limit'
+												? 'bg-accent4'
+												: 'bg-accent2 hover:bg-accent3'
+										}`}>
+										Limit
+									</button>
+								</div>
+								{order === 'market' && (
+									<button
+										type="button"
+										disabled
+										className="py-3 px-4 mt-3 w-full bg-accent1 text-gray-400 block text-center mb-2 cursor-pointer transition-colors rounded-lg disabled:opacity-50 disabled:cursor-not-allowed">
+										Price: market
+									</button>
 								)}
-
-								<div className="flex items-center gap-4">
+								{order === 'limit' && (
+									<div className="mt-3">
+										{!isEditingTarget ? (
+											<label
+												htmlFor="target"
+												className="py-3 px-4 w-full bg-accent1 text-gray-400 block hover:text-yellow-300 text-center mb-2 cursor-pointer transition-colors rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-900"
+												onClick={() => {
+													setIsEditingTarget(true);
+													setTimeout(() => {
+														targetInputRef.current?.focus();
+													}, 0);
+												}}
+												onKeyDown={(e) => {
+													if (
+														e.key === 'Enter' ||
+														e.key === ' '
+													) {
+														setIsEditingTarget(
+															false
+														);
+														setTimeout(() => {
+															targetInputRef.current?.focus();
+														}, 0);
+														e.preventDefault();
+													}
+												}}
+												tabIndex={0}>
+												Target price: {limitPrice} USD
+											</label>
+										) : (
+											<input
+												ref={targetInputRef}
+												type="number"
+												value={limitPrice}
+												onChange={
+													handleAmountChangeTarget
+												}
+												onBlur={() => {
+													setIsEditingTarget(false);
+													if (limitPrice === '') {
+														setLimitPriceCurrent();
+													}
+												}}
+												className="font-medium flex-1 py-3 px-4 text-center text-gray-400 block w-full rounded-lg bg-gray-900"
+												min={0}
+												max={200000}
+												onKeyDown={(e) => {
+													if (
+														e.key === 'Enter' ||
+														e.key === ' '
+													) {
+														setIsEditingTarget(
+															false
+														);
+														if (limitPrice === '') {
+															setLimitPriceCurrent();
+														}
+														e.preventDefault();
+													}
+												}}
+											/>
+										)}
+									</div>
+								)}
+								<div className="mt-3">
+									{isEditingAmountBtc ? (
+										<input
+											ref={buyInputRef}
+											type="number"
+											value={buyAmount}
+											onChange={handleAmountChangeBtc}
+											onBlur={() => {
+												if (buyAmount === '') {
+													setBuyAmount(0);
+												}
+												setIsEditingAmountBtc(false);
+											}}
+											onFocus={() => {
+												if (buyAmount === 0)
+													setBuyAmount('');
+											}}
+											className="font-medium flex-1 py-3 px-4 text-center text-gray-400 block w-full rounded-lg bg-gray-900"
+											min={0}
+											max={balanceFiat || 0}
+											onKeyDown={(e) => {
+												if (
+													e.key === 'Enter' ||
+													e.key === ' '
+												) {
+													setIsEditingAmountBtc(
+														false
+													);
+													if (buyAmount === '') {
+														setBuyAmount(0);
+													}
+													e.preventDefault();
+												}
+											}}
+										/>
+									) : (
+										<div>
+											<label
+												htmlFor="BuySlider"
+												className="text-gray-400 block text-center hover:text-yellow-300 bg-accent1 rounded-lg py-3 px-4 hover:bg-gray-900"
+												onClick={() => {
+													setIsEditingAmountBtc(true);
+													setTimeout(() => {
+														buyInputRef.current?.focus();
+													}, 0);
+												}}
+												onKeyDown={(e) => {
+													if (
+														e.key === 'Enter' ||
+														e.key === ' '
+													) {
+														setIsEditingAmountBtc(
+															true
+														);
+														setTimeout(() => {
+															buyInputRef.current?.focus();
+														}, 0);
+														e.preventDefault();
+													}
+												}}
+												tabIndex={0}>
+												Buy amount: {buyAmount} USD
+											</label>
+										</div>
+									)}
+								</div>
+								<div className="flex items-center gap-4 mt-3">
 									<button
 										onClick={() =>
 											setBuyAmount((prev) =>
@@ -415,7 +636,7 @@ const Wallet = () => {
 											)
 										}
 										type="button"
-										className="py-1 px-2 w-8 md:py-2 md:px-4 md:w-12 bg-accent2 text-white rounded-lg hover:bg-red-700 transition-colors">
+										className="md:mt-1 md:mb-1 py-1 px-2 w-8 md:py-2 md:px-4 md:w-12 bg-accent2 text-white rounded-lg hover:bg-red-700 transition-colors">
 										-
 									</button>
 
@@ -442,12 +663,12 @@ const Wallet = () => {
 											)
 										}
 										type="button"
-										className="py-1 px-2 w-8 md:py-2 md:px-4 md:w-12 bg-accent2 text-white rounded-lg hover:bg-green-600/75 transition-colors">
+										className="md:mt-1 md:mb-1 py-1 px-2 w-8 md:py-2 md:px-4 md:w-12 bg-accent2 text-white rounded-lg hover:bg-green-600/75 transition-colors">
 										+
 									</button>
 								</div>
 
-								<div className="flex justify-center gap-4 mt-4">
+								<div className="flex justify-center gap-3 mt-3">
 									<button
 										onClick={() => {
 											setIsEditingAmountBtc(false);
@@ -455,7 +676,7 @@ const Wallet = () => {
 											setBuyAmount(0);
 										}}
 										type="button"
-										className="font-medium py-2 px-4 bg-green-500/75 text-white rounded-lg hover:bg-green-600/75 transition-colors">
+										className="w-full font-medium py-3 px-4 bg-green-500/75 text-white rounded-lg hover:bg-green-600/75 transition-colors">
 										Confirm
 									</button>
 									<button
@@ -465,7 +686,7 @@ const Wallet = () => {
 											setBuyAmount(0);
 										}}
 										type="button"
-										className="font-medium py-2 px-4 bg-red-500/75 text-white rounded-lg hover:bg-red-600/75 transition-colors">
+										className="w-full font-medium py-3 px-4 bg-red-500/75 text-white rounded-lg hover:bg-red-600/75 transition-colors">
 										Cancel
 									</button>
 								</div>
