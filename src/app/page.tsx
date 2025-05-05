@@ -3,6 +3,7 @@
 import Header from './components/Header';
 import Wallet from './components/Wallet';
 import Graph from './components/Graph';
+import History from './components/History/History';
 import { useWallet } from './contexts/WalletContext';
 
 export default function Home() {
@@ -15,7 +16,7 @@ export default function Home() {
 						{!isUnlocked && <Header />}
 						<Wallet />
 						{/* <Graph /> */}
-						{/* {isUnlocked && <History />} */}
+						{isUnlocked && <History />}
 					</div>
 				</div>
 			</div>

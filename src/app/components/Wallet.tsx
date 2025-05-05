@@ -134,8 +134,14 @@ const Wallet = () => {
 		setError('');
 		setMessage('');
 
+		let limit = '';
+
+		if (order === 'limit') {
+			limit = `&limit=${limitPrice}`;
+		}
+
 		const { data, error, errorMessage } = await apiClient<Response>(
-			`api/btc/buy?amount=${buyAmount}`,
+			`api/btc/buy?amount=${buyAmount}${limit}`,
 			'POST',
 			{
 				auth: true

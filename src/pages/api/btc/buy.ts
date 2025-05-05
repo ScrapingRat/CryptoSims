@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { ZodError } from 'zod';
 import connectToDatabase from '@actions/connectToDatabase';
 import Wallet from '@models/wallet';
+import Order from '@models/order';
 import Ohlc, { IOhlc } from '@models/ohlc';
 import authorizeToken from 'lib/authorizeToken';
 import { postMethodSchema } from '@schemas/methodSchema';
@@ -48,7 +49,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 			return res.status(401).json({ error: 'Wallet not found' });
 		}
 
-		const { amount } = req.query;
+		const { amount, limit } = req.query;
 
 		if (!amount) {
 			return res
@@ -57,9 +58,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		}
 
 		const amountString = amount as string;
-		const decimalIndex = amountString.indexOf('.');
+		const amountDecimalIndex = amountString.indexOf('.');
 
-		if (decimalIndex !== -1 && amountString.length - decimalIndex - 1 > 2) {
+		if (
+			amountDecimalIndex !== -1 &&
+			amountString.length - amountDecimalIndex - 1 > 2
+		) {
 			return res
 				.status(400)
 				.json({ error: 'Amount can have at most 2 decimals.' });
@@ -80,6 +84,47 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		}
 
 		const timestamp = new Date().getTime() / 1000;
+
+		if (limit) {
+			const limitString = limit as string;
+			const limitDecimalIndex = limitString.indexOf('.');
+
+			if (
+				limitDecimalIndex !== -1 &&
+				limitString.length - limitDecimalIndex - 1 > 2
+			) {
+				return res
+					.status(400)
+					.json({ error: 'limit can have at most 2 decimals.' });
+			}
+
+			const limitFiat: number = parseFloat(limitString);
+
+			const fiatDec = await Wallet.decFiat(walletId, amountFiat);
+
+			if (!fiatDec.success) {
+				return res.status(400).json({ error: fiatDec.message });
+			}
+
+			const order = await Order.place(
+				walletId,
+				amountFiat,
+				limitFiat,
+				'buy',
+				fiatDec.purchaseId
+			);
+
+			if (!order.success) {
+				await Wallet.incFiat(walletId, amountFiat);
+				return res.status(400).json({ error: order.message });
+			}
+
+
+			return res.status(200).json({
+				message: `Limit buy order placed: $${amountFiat} at $${limitFiat} (Order ID: ${order.id})`
+			});
+		}
+
 		const data: IOhlc | null = await Ohlc.findByTimestamp(timestamp);
 
 		if (!data) {
@@ -95,7 +140,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 			return res.status(400).json({ error: fiatDec.message });
 		}
 
-		const btcAmount = (1 / data.close) * amountFiat;
+		const btcAmount = parseFloat(((1 / data.close) * amountFiat).toFixed(8));
 
 		const btcInc = await Wallet.incBtc(
 			walletId,

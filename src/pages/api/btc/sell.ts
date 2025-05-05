@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { ZodError } from 'zod';
 import connectToDatabase from '@actions/connectToDatabase';
 import Wallet from '@models/wallet';
+import Order from '@models/order';
 import Ohlc, { IOhlc } from '@models/ohlc';
 import authorizeToken from 'lib/authorizeToken';
 import { postMethodSchema } from '@schemas/methodSchema';
@@ -48,7 +49,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 			return res.status(401).json({ error: 'Wallet not found' });
 		}
 
-		const { amount } = req.query;
+		const { amount, limit } = req.query;
 
 		if (!amount) {
 			return res
@@ -80,6 +81,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		}
 
 		const timestamp = new Date().getTime() / 1000;
+
 		const data: IOhlc | null = await Ohlc.findByTimestamp(timestamp);
 
 		if (!data) {
@@ -95,7 +97,42 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 			return res.status(400).json({ error: btcDec.message });
 		}
 
-		const fiatAmount = data.close * amountBtc;
+		const fiatAmount = parseFloat((data.close * amountBtc).toFixed(2));
+
+		// LIMIT //
+		if (limit) {
+			const limitString = limit as string;
+			const limitDecimalIndex = limitString.indexOf('.');
+
+			if (
+				limitDecimalIndex !== -1 &&
+				limitString.length - limitDecimalIndex - 1 > 2
+			) {
+				return res
+					.status(400)
+					.json({ error: 'limit can have at most 2 decimals.' });
+			}
+
+			const limitFiat: number = parseFloat(limitString);
+
+			const order = await Order.place(
+				walletId,
+				amountBtc,
+				limitFiat,
+				'sell',
+				btcDec.purchaseId
+			);
+
+			if (!order.success) {
+				await Wallet.incBtc(walletId, amountBtc, fiatAmount);
+				return res.status(400).json({ error: order.message });
+			}
+
+			return res.status(200).json({
+				message: `Limit sell order placed: $${amountBtc} at $${limitFiat} (Order ID: ${order.id})`
+			});
+		}
+		// LIMIT //
 
 		const fiatInc = await Wallet.incFiat(
 			walletId,
