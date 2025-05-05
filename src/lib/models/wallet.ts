@@ -11,6 +11,7 @@ interface IWallet extends Document {
 	balanceBtc: number;
 	purchaseFiat: [string, Date, number];
 	purchaseBtc: [string, Date, number, number];
+	openOrders: [string, Date, number, number, string];
 	compareSeedPhrase(candidateSeedPhrase: string): Promise<boolean>;
 }
 
@@ -38,7 +39,7 @@ interface WalletModel extends mongoose.Model<IWallet> {
 		amount: number,
 		purchaseId?: string
 	): { success: boolean; message: string; purchaseId: string };
-	diff(walletId: string): { netProfit: number, percentProfit: number };
+	diff(walletId: string): { netProfit: number; percentProfit: number };
 }
 
 const WalletSchema = new Schema({
@@ -60,6 +61,7 @@ const WalletSchema = new Schema({
 		set: (v: number) => Math.round(v * 1e8) / 1e8
 	},
 	purchaseBtc: { type: Array, required: false },
+	openOrders: { type: Array, required: false }
 });
 
 WalletSchema.index({ seedPhradeFingerprint: 1 });
@@ -263,7 +265,8 @@ WalletSchema.statics.incBtc = async function (
 		walletId,
 		{
 			$set: {
-				balanceBtc: Math.round((wallet.balanceBtc + amountBtc) * 1e8) / 1e8
+				balanceBtc:
+					Math.round((wallet.balanceBtc + amountBtc) * 1e8) / 1e8
 			},
 			$push: { purchaseBtc: [purchaseId, date, amountBtc, amountFiat] }
 		},
@@ -347,7 +350,7 @@ WalletSchema.statics.diff = async function (walletId: string) {
 
 	let totalFiatSpent = 0;
 
-	for (const [, , ,fiatAmount] of wallet.purchaseBtc || []) {
+	for (const [, , , fiatAmount] of wallet.purchaseBtc || []) {
 		totalFiatSpent += fiatAmount;
 	}
 
@@ -355,14 +358,15 @@ WalletSchema.statics.diff = async function (walletId: string) {
 
 	const data = await Ohlc.findByTimestamp(timestamp);
 
-	const btcValue = Math.round(((data?.close || 0) * wallet.balanceBtc) * 1e2) / 1e2;
+	const btcValue =
+		Math.round((data?.close || 0) * wallet.balanceBtc * 1e2) / 1e2;
 	const netProfit = btcValue - totalFiatSpent;
 	const percentProfit = (netProfit / totalFiatSpent) * 100;
 
 	return {
 		netProfit: Math.round(netProfit * 1e2) / 1e2,
 		percentProfit: Math.round(percentProfit * 1e2) / 1e2
-	}
+	};
 };
 
 const Wallet =

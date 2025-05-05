@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import Wallet from './wallet';
 // import { ObjectId } from 'mongodb';
 
 interface IOrder extends Document {
@@ -77,6 +78,7 @@ OrderSchema.statics.place = async function (
 			limitType,
 			purchaseId
 		});
+
 		return {
 			success: true,
 			message: 'Order placed successfully',

@@ -76,6 +76,7 @@ const BinanceTicker: React.FC = () => {
 				<Image
 					src="/bitcoin.svg"
 					alt="Bitcoin"
+					aria-label='bitcoinLogo'
 					width={22}
 					height={22}
 					className="inline-block align-top"
@@ -95,7 +96,7 @@ const BinanceTicker: React.FC = () => {
 					{formattedPrice}
 				</p>
 				{change !== null && changePercent !== null && (
-					<div className={`${changeColor} text-xs opacity-75`}>
+					<div className={`${changeColor} text-xs`}>
 						24h ≃ {change > 0 ? '+' : ''}
 						{change.toFixed(2)} ({changePercent > 0 ? '+' : ''}
 						{changePercent.toFixed(2)}%)

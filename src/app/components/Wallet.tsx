@@ -248,7 +248,9 @@ const Wallet = () => {
 										xmlns="http://www.w3.org/2000/svg"
 										viewBox="0 0 24 24"
 										fill="currentColor"
-										className="size-6 text-green-400">
+										className="size-6 text-green-400"
+										role="img"
+										aria-label="Dollar icon">
 										<path d="M10.464 8.746c.227-.18.497-.311.786-.394v2.795a2.252 2.252 0 0 1-.786-.393c-.394-.313-.546-.681-.546-1.004 0-.323.152-.691.546-1.004ZM12.75 15.662v-2.824c.347.085.664.228.921.421.427.32.579.686.579.991 0 .305-.152.671-.579.991a2.534 2.534 0 0 1-.921.42Z" />
 										<path
 											fillRule="evenodd"
@@ -269,7 +271,7 @@ const Wallet = () => {
 											: 'text-white'
 									} lg-text-base lg-whitespace-nowrap`}>
 									<p>{balanceBtc} BTC</p>
-									<p className="text-xs opacity-75 text-center">
+									<p className="text-xs text-center">
 										≃ {btcToFiat} USD (
 										{netProfit >= 0 && '+'}
 										{netProfit} USD /{' '}
@@ -278,7 +280,7 @@ const Wallet = () => {
 									</p>
 								</div>
 								{isDepositing === false ? (
-									<div className="mt-3 text-center flex">
+									<div className="mt-4 text-center flex">
 										<button
 											onClick={() =>
 												setIsDepositing(true)
@@ -294,6 +296,7 @@ const Wallet = () => {
 											<input
 												ref={depositInputRef}
 												type="number"
+												aria-label="Deposit amount"
 												value={depositAmount}
 												onChange={handleAmountChange}
 												onBlur={() => {
@@ -329,7 +332,7 @@ const Wallet = () => {
 										) : (
 											<div>
 												<label
-													htmlFor="DepositSlider"
+													htmlFor="depositSlider"
 													className="text-gray-400 block text-center mb-0 cursor-pointer hover:text-yellow-300 bg-accent1 hover:bg-gray-900 rounded-lg py-3 px-4"
 													onClick={() => {
 														setIsEditingAmount(
@@ -354,7 +357,7 @@ const Wallet = () => {
 														}
 													}}
 													tabIndex={0}>
-													Deposit Amount:{' '}
+													Deposit amount:{' '}
 													{depositAmount} USD
 												</label>
 											</div>
@@ -377,11 +380,18 @@ const Wallet = () => {
 
 											<input
 												id="depositSlider"
+												aria-label="depositSlider"
 												type="range"
 												min={0}
 												max={50000}
 												step={100}
 												value={depositAmount}
+												aria-valuenow={
+													typeof depositAmount ===
+													'number'
+														? depositAmount
+														: 0
+												}
 												onChange={(e) =>
 													setDepositAmount(
 														Number(e.target.value)
@@ -413,7 +423,7 @@ const Wallet = () => {
 													setDepositAmount(0);
 												}}
 												type="button"
-												className="w-full font-medium py-3 px-4 bg-green-500/75 text-white rounded-lg hover:bg-green-600/75 transition-colors">
+												className="w-full font-medium py-3 px-4 bg-green-700 text-white rounded-lg hover:bg-green-800 transition-colors">
 												Confirm
 											</button>
 											<button
@@ -448,14 +458,14 @@ const Wallet = () => {
 					</div>
 					<div className="flex-1 p-6 border border-accent2 rounded-lg bg-background/50">
 						<div className="mb-3 lg:mb-10">
-							<BinanceTicker />
+							{/* <BinanceTicker /> */}
 						</div>
 						{isBuying === false ? (
 							<div className="text-center flex flex-row gap-3 mt-0 md:mt-9 lg:mt-0">
 								<button
 									onClick={() => setIsBuying(true)}
 									type="button"
-									className="font-medium flex-1 py-3 px-4 bg-green-500/75 text-white rounded-lg hover:bg-green-600/75 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+									className="font-medium flex-1 py-3 px-4 bg-green-700 text-white rounded-lg hover:bg-green-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
 									Buy BTC
 								</button>
 								<button
@@ -508,7 +518,6 @@ const Wallet = () => {
 									<div className="mt-3">
 										{!isEditingTarget ? (
 											<label
-												htmlFor="target"
 												className="py-3 px-4 w-full bg-accent1 text-gray-400 block hover:text-yellow-300 text-center mb-2 cursor-pointer transition-colors rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-900"
 												onClick={() => {
 													setIsEditingTarget(true);
@@ -537,6 +546,7 @@ const Wallet = () => {
 											<input
 												ref={targetInputRef}
 												type="number"
+												aria-label="Target price"
 												value={limitPrice}
 												onChange={
 													handleAmountChangeTarget
@@ -573,6 +583,7 @@ const Wallet = () => {
 										<input
 											ref={buyInputRef}
 											type="number"
+											aria-label="Buy amount"
 											value={buyAmount}
 											onChange={handleAmountChangeBtc}
 											onBlur={() => {
@@ -606,7 +617,6 @@ const Wallet = () => {
 									) : (
 										<div>
 											<label
-												htmlFor="BuySlider"
 												className="text-gray-400 block text-center hover:text-yellow-300 bg-accent1 rounded-lg py-3 px-4 hover:bg-gray-900"
 												onClick={() => {
 													setIsEditingAmountBtc(true);
@@ -648,11 +658,17 @@ const Wallet = () => {
 
 									<input
 										id="buySlider"
+										aria-label="buySlider"
 										type="range"
 										min={0}
 										max={balanceFiat || 0}
 										step={100}
 										value={buyAmount}
+										aria-valuenow={
+											typeof buyAmount === 'number'
+												? buyAmount
+												: 0
+										}
 										onChange={(e) =>
 											setBuyAmount(Number(e.target.value))
 										}
@@ -682,7 +698,7 @@ const Wallet = () => {
 											setBuyAmount(0);
 										}}
 										type="button"
-										className="w-full font-medium py-3 px-4 bg-green-500/75 text-white rounded-lg hover:bg-green-600/75 transition-colors">
+										className="w-full font-medium py-3 px-4 bg-green-700 text-white rounded-lg hover:bg-green-800 transition-colors">
 										Confirm
 									</button>
 									<button
