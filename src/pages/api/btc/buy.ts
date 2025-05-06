@@ -119,9 +119,21 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 				return res.status(400).json({ error: order.message });
 			}
 
+			const walletOrder = await Wallet.place(
+				walletId,
+				order.id,
+				amountFiat,
+				limitFiat,
+				'buy'
+			);
+
+			if (!walletOrder.success) {
+				await Wallet.incFiat(walletId, amountFiat);
+				return res.status(400).json({ error: walletOrder.message });
+			}
 
 			return res.status(200).json({
-				message: `Limit buy order placed: $${amountFiat} at $${limitFiat} (Order ID: ${order.id})`
+				message: `Limit buy order placed: $${amountFiat} at $${limitFiat}`
 			});
 		}
 

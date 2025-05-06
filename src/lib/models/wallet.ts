@@ -40,6 +40,17 @@ interface WalletModel extends mongoose.Model<IWallet> {
 		purchaseId?: string
 	): { success: boolean; message: string; purchaseId: string };
 	diff(walletId: string): { netProfit: number; percentProfit: number };
+	place(
+		walletId: string,
+		orderId: string,
+		amount: number,
+		limit: number,
+		type: string
+	): { success: boolean; message: string };
+	cancel(
+		walletId: string,
+		orderId: string
+	): { success: boolean; message: string };
 }
 
 const WalletSchema = new Schema({
@@ -366,6 +377,70 @@ WalletSchema.statics.diff = async function (walletId: string) {
 	return {
 		netProfit: Math.round(netProfit * 1e2) / 1e2,
 		percentProfit: Math.round(percentProfit * 1e2) / 1e2
+	};
+};
+
+WalletSchema.statics.place = async function (
+	walletId: string,
+	orderId: string,
+	amount: number,
+	limit: number,
+	type: string
+) {
+	const date = new Date();
+
+	const updatedWallet = await this.findByIdAndUpdate(walletId, {
+		$push: { openOrders: [orderId, date, amount, limit, type] }
+	});
+
+	if (!updatedWallet) {
+		console.error(
+			`place error: Wallet with ID ${walletId} not found or update failed.`
+		);
+		return { success: false, message: `Failed to update wallet order.` };
+	}
+
+	return {
+		success: true,
+		message: `Limit buy order placed: $${amount} at $${limit} (Order ID: ${orderId})`
+	};
+};
+
+WalletSchema.statics.cancel = async function (
+	walletId: string,
+	orderId: string
+) {
+	const wallet = await this.findById(walletId);
+	if (!wallet) {
+		console.error(`cancel error: Wallet with ID ${walletId} not found.`);
+		return { success: false, message: `Wallet does not exist.` };
+	}
+
+	const orderToCancel = (wallet.openOrders || []).find(
+		(order: [string, Date, number, number, string]) =>
+			order[0]?.toString() === orderId.toString()
+	);
+
+	const filteredOrders = (wallet.openOrders || []).filter(
+		(order: [string, Date, number, number, string]) =>
+			order[0]?.toString() !== orderId.toString()
+	);
+
+	wallet.openOrders = filteredOrders;
+
+	if (orderToCancel) {
+		const amount = orderToCancel[2] || 0;
+		wallet.balanceFiat =
+			Math.round((wallet.balanceFiat + amount) * 1e2) / 1e2;
+	}
+
+	await wallet.save();
+
+	return {
+		success: true,
+		message:
+			`Order ${orderId} removed from openOrders.` +
+			(orderToCancel ? ` Refunded $${orderToCancel[2]} to balance.` : '')
 	};
 };
 

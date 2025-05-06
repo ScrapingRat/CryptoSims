@@ -19,6 +19,7 @@ type WalletContextType = {
 	netProfit: number;
 	percentProfit: number;
 	historyBuy: [string, Date, number, number][];
+	openOrders: [string, Date, number, number, string][];
 	fetchWallet: () => Promise<void>;
 };
 
@@ -34,6 +35,9 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 	const [historyBuy, setHistoryBuy] = useState<
 		[string, Date, number, number][]
 	>([]);
+	const [openOrders, setOpenOrders] = useState<
+		[string, Date, number, number, string][]
+	>([]);
 
 	const fetchWallet = useCallback(async () => {
 		try {
@@ -43,6 +47,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 				netProfit: number;
 				percentProfit: number;
 				historyBtc: Array<[string, Date, number, number]>;
+				openOrders: Array<[string, Date, number, number, string]>;
 				// historySell: Array<[string, Date, number, number]>;
 			}
 
@@ -83,6 +88,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 				setNetProfit(data.netProfit);
 				setPercentProfit(data.percentProfit);
 				setHistoryBuy(data.historyBtc);
+				setOpenOrders(data.openOrders);
 				const now = Math.floor(Date.now() / 1000);
 
 				const ohlc = await apiClient<IOhlc>(
@@ -113,6 +119,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 				netProfit,
 				percentProfit,
 				historyBuy,
+				openOrders,
 				fetchWallet
 			}}>
 			{children}

@@ -61,6 +61,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 			percentProfit,
 			historyFiat: wallet.purchaseFiat,
 			historyBtc: wallet.purchaseBtc,
+			openOrders: wallet.openOrders
 		});
 	} catch (error) {
 		res.status(401).json({ error: 'Authentication failed' });

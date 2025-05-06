@@ -3,7 +3,6 @@ import { ZodError } from 'zod';
 import connectToDatabase from '@actions/connectToDatabase';
 import Wallet from '@models/wallet';
 import Order from '@models/order';
-import Ohlc, { IOhlc } from '@models/ohlc';
 import authorizeToken from 'lib/authorizeToken';
 import { postMethodSchema } from '@schemas/methodSchema';
 import mongoose from 'mongoose';
@@ -51,7 +50,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
 		const { order } = req.query;
 
-		if (!order || Array.isArray(order) || !mongoose.Types.ObjectId.isValid(order)) {
+		if (
+			!order ||
+			Array.isArray(order) ||
+			!mongoose.Types.ObjectId.isValid(order)
+		) {
 			return res.status(400).json({ error: 'Invalid order id' });
 		}
 
@@ -61,11 +64,27 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 			return res.status(404).json({ error: 'Order not found' });
 		}
 
-		return res.status(200).json({
-			message: 'Order found',
-			order: data
-		});
+		if (data.walletId != walletId) {
+			return res.status(400).json({ error: 'Invalid order' });
+		}
 
+		const deleteOrder = await Order.findByIdAndDelete(order);
+
+		if (!deleteOrder) {
+			return res
+				.status(400)
+				.json({ error: 'Order could not be deleted' });
+		}
+
+		const updatedWallet = await Wallet.cancel(walletId, order);
+
+		if (!updatedWallet) {
+			return res
+				.status(400)
+				.json({ error: 'Order could not be deleted' });
+		}
+
+		return res.status(200).json({ message: 'Order successfully deleted' });
 	} catch (error) {
 		res.status(401).json({ error });
 		if (error instanceof ZodError) {
