@@ -236,7 +236,7 @@ const Wallet = () => {
 	} else if (isUnlocked) {
 		return (
 			<div className="w-full mx-auto">
-				<div className="flex flex-col md:flex-row gap-4">
+				<div className="flex flex-col md:flex-row gap-4 sm:gap-6">
 					<div className="space-y-4 flex-1 p-6 border border-accent2 rounded-lg bg-background/50">
 						{balanceFiat !== null && balanceBtc !== null ? (
 							<div>
@@ -280,7 +280,7 @@ const Wallet = () => {
 									</p>
 								</div>
 								{isDepositing === false ? (
-									<div className="mt-4 text-center flex">
+									<div className="mt-3 text-center flex">
 										<button
 											onClick={() =>
 												setIsDepositing(true)
@@ -457,8 +457,8 @@ const Wallet = () => {
 						)}
 					</div>
 					<div className="flex-1 p-6 border border-accent2 rounded-lg bg-background/50">
-						<div className="mb-3 lg:mb-10">
-							{/* <BinanceTicker /> */}
+						<div className="mb-3 lg:mb-9">
+							<BinanceTicker />
 						</div>
 						{isBuying === false ? (
 							<div className="text-center flex flex-row gap-3 mt-0 md:mt-9 lg:mt-0">

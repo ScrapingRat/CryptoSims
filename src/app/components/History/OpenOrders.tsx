@@ -15,11 +15,11 @@ const OpenOrders = () => {
 		<>
 			{(historyBuy ?? []).length !== 0 && (
 				<div className="space-y-4 flex-1 p-6 border border-accent2 rounded-lg bg-background/50">
-					<h2 className="text-lg font-bold mb-2 text-center">
+					<h2 className="text-l font-bold mb-2 text-center">
 						Open Orders
 					</h2>
 					<div className="overflow-y-auto max-h-32 overflow-x-auto whitespace-nowrap rounded-lg md:flex md:justify-center">
-						<table className="w-full text-left" aria-label="Open Orders">
+						<table className="w-full text-left sm:text-center" aria-label="Open Orders">
 							<thead className="uppercase text-xs bg-accent2 sticky top-0">
 								<tr className="">
 									<th scope="col" className="pl-2 pr-2 py-1">Date</th>

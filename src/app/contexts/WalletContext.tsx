@@ -31,7 +31,9 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 	const [btcToFiat, setBtcToFiat] = useState(0);
 	const [netProfit, setNetProfit] = useState(0);
 	const [percentProfit, setPercentProfit] = useState(0);
-	const [historyBuy, setHistoryBuy] = useState<[string, Date, number, number][]>([]);
+	const [historyBuy, setHistoryBuy] = useState<
+		[string, Date, number, number][]
+	>([]);
 
 	const fetchWallet = useCallback(async () => {
 		try {
@@ -44,7 +46,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 				// historySell: Array<[string, Date, number, number]>;
 			}
 
-
 			const { data, error, refreshed, status } =
 				await apiClient<WalletResponse>('api/getWallet');
 
@@ -53,7 +54,21 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 			}
 
 			if (error) {
-				console.error('Error fetching wallet:', error);
+				try {
+					interface LockResponse {
+						message: string;
+					}
+					const { error, errorMessage } =
+						await apiClient<LockResponse>('api/lock', 'DELETE');
+
+					if (!error) {
+						setIsUnlocked(false);
+					} else {
+						console.log(errorMessage);
+					}
+				} catch (error) {
+					console.error('Failed to lock wallet:', error);
+				}
 
 				if (status === 401) {
 					setIsUnlocked(false);

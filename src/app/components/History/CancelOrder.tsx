@@ -19,7 +19,9 @@ const CancelOrder = ({ orderId }: { orderId: string }) => {
 		<>
 			<button
 				className="bg-red-500/75 text-white rounded hover:bg-red-600/75 transition flex items-center justify-center"
-				onClick={() => cancel(orderId)}>
+				onClick={() => cancel(orderId)}
+				title="Cancel order"
+			>
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
 					fill="none"

@@ -213,6 +213,44 @@ const Graph = () => {
 		};
 	}, [selectedRange, allTimeData]);
 
+	useEffect(() => {
+		const handleResize = () => {
+			setOption((prev: EChartsOption) => ({
+				...prev,
+				title: {
+					...prev.title,
+					show: window.innerWidth < 600 ? false : true,
+				},
+				xAxis: {
+					...prev.xAxis,
+					show: window.innerWidth < 600 ? false : true,
+					axisLabel: {
+						...prev.xAxis.axisLabel,
+						show: window.innerWidth < 600 ? false : true,
+					},
+				},
+				yAxis: {
+					...prev.yAxis,
+					axisLabel: {
+						...prev.yAxis.axisLabel,
+						inside: window.innerWidth < 600 ? true : false,
+						margin: window.innerWidth < 600 ? 0 : 10,
+					},
+				},
+				grid: {
+					...prev.grid,
+					left: window.innerWidth < 600 ? 0 : '10%',
+					right: window.innerWidth < 600 ? 12 : '10%',
+					bottom: window.innerWidth < 600 ? 40 : '15%',
+					top: window.innerWidth < 600 ? 24 : 60,
+				},
+			}));
+		};
+
+		window.addEventListener('resize', handleResize);
+		return () => window.removeEventListener('resize', handleResize);
+	}, []);
+
 	return (
 		<div className="w-full mx-auto p-6 border border-accent2 rounded-lg bg-background/50">
 			<div className="flex gap-2 mb-4 flex-wrap">
