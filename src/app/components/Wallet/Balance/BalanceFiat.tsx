@@ -4,6 +4,7 @@ const BalanceFiat = () => {
 	const { balanceFiat } = useWallet();
 	return (
 		<>
+			<p className="text-gray-400 text-center">Balance:</p>
 			<div className="flex flex-row items-center text-center justify-center gap-0.5">
 				<svg
 					xmlns="http://www.w3.org/2000/svg"

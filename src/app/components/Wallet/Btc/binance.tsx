@@ -71,12 +71,12 @@ const BinanceTicker: React.FC = () => {
 	}
 
 	return (
-		<div>
+		<div className="mb-3 lg:mb-9">
 			<p className="text-gray-400 text-center">
 				<Image
 					src="/bitcoin.svg"
 					alt="Bitcoin"
-					aria-label='bitcoinLogo'
+					aria-label="bitcoinLogo"
 					width={22}
 					height={22}
 					className="inline-block align-top"

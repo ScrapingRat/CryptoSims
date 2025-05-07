@@ -133,7 +133,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 			}
 
 			return res.status(200).json({
-				message: `Limit buy order placed: $${amountFiat} at $${limitFiat}`
+				message: `Limit buy order placed: $${amountFiat} at BTC = $${limitFiat}`
 			});
 		}
 

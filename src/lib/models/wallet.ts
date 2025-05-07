@@ -402,7 +402,7 @@ WalletSchema.statics.place = async function (
 
 	return {
 		success: true,
-		message: `Limit buy order placed: $${amount} at $${limit} (Order ID: ${orderId})`
+		message: `Limit buy order placed: $${amount} at BTC = $${limit} (Order ID: ${orderId})`
 	};
 };
 

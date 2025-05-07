@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { WalletProvider } from './contexts/WalletContext';
-import Navbar from './components/Navbar';
+import Navbar from './components/Navbar/Navbar';
 
 export const metadata: Metadata = {
 	title: 'CryptoSims',

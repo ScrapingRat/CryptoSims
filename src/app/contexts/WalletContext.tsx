@@ -4,7 +4,6 @@ import {
 	createContext,
 	useContext,
 	useState,
-	ReactNode,
 	useCallback
 } from 'react';
 import apiClient from 'lib/apiClient';
@@ -25,7 +24,7 @@ type WalletContextType = {
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
 
-export const WalletProvider = ({ children }: { children: ReactNode }) => {
+export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
 	const [isUnlocked, setIsUnlocked] = useState(false);
 	const [balanceFiat, setBalanceFiat] = useState<number | null>(null);
 	const [balanceBtc, setBalanceBtc] = useState<number | null>(null);

@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useWallet } from '../../contexts/WalletContext';
+import OrderHistoryBody from './OrderHistoryBody';
+import OrderHistoryHead from './OrderHistoryHead';
 
-type SortKey = 'date' | 'amount' | 'price';
-type SortOrder = 'asc' | 'desc';
+export type SortKey = 'date' | 'amount' | 'price';
+export type SortOrder = 'asc' | 'desc';
 
 const OrderHistory = () => {
 	const { isUnlocked, historyBuy, fetchWallet } = useWallet();
@@ -15,30 +17,6 @@ const OrderHistory = () => {
 		}
 	}, [isUnlocked, fetchWallet]);
 
-	const handleSort = (key: SortKey) => {
-		if (sortKey === key) {
-			setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-		} else {
-			setSortKey(key);
-			setSortOrder('asc');
-		}
-	};
-
-	const sortedHistory = [...(historyBuy ?? [])].sort((a, b) => {
-		let aValue, bValue;
-		if (sortKey === 'date') {
-			aValue = new Date(a[1]).getTime();
-			bValue = new Date(b[1]).getTime();
-		} else if (sortKey === 'amount') {
-			aValue = a[2];
-			bValue = b[2];
-		} else {
-			aValue = a[3];
-			bValue = b[3];
-		}
-		return sortOrder === 'asc' ? aValue - bValue : bValue - aValue;
-	});
-
 	return (
 		<>
 			{(historyBuy ?? []).length !== 0 && (
@@ -50,106 +28,16 @@ const OrderHistory = () => {
 						<table
 							className="w-full text-center"
 							aria-label="Order History">
-							<thead className="uppercase text-xs bg-accent2 sticky top-0">
-								<tr>
-									<th
-										className={'pl-2 pr-2 py-1 cursor-pointer'}
-										onClick={() => handleSort('date')}>
-										Date
-										<span className="ml-1">
-											<span
-												className={
-													sortKey === 'date' &&
-													sortOrder === 'asc'
-														? 'text-yellow-400'
-														: 'text-gray-400'
-												}>
-												▲
-											</span>
-											<span
-												className={
-													sortKey === 'date' &&
-													sortOrder === 'desc'
-														? 'text-yellow-400'
-														: 'text-gray-400'
-												}>
-												▼
-											</span>
-										</span>
-									</th>
-									<th
-										className={'pl-2 pr-2 py-1 cursor-pointer'}
-										onClick={() => handleSort('amount')}>
-										Amount
-										<span className="ml-1">
-											<span
-												className={
-													sortKey === 'amount' &&
-													sortOrder === 'asc'
-														? 'text-yellow-400'
-														: 'text-gray-400'
-												}>
-												▲
-											</span>
-											<span
-												className={
-													sortKey === 'amount' &&
-													sortOrder === 'desc'
-														? 'text-yellow-400'
-														: 'text-gray-400'
-												}>
-												▼
-											</span>
-										</span>
-									</th>
-									<th
-										className={'pl-2 pr-2 py-1 cursor-pointer'}
-										onClick={() => handleSort('price')}>
-										Price
-										<span className="ml-1">
-											<span
-												className={
-													sortKey === 'price' &&
-													sortOrder === 'asc'
-														? 'text-yellow-400'
-														: 'text-gray-400'
-												}>
-												▲
-											</span>
-											<span
-												className={
-													sortKey === 'price' &&
-													sortOrder === 'desc'
-														? 'text-yellow-400'
-														: 'text-gray-400'
-												}>
-												▼
-											</span>
-										</span>
-									</th>
-								</tr>
-							</thead>
-							<tbody>
-								{sortedHistory.map(
-									([id, date, amount, price]) => (
-										<tr
-											className="even:bg-hover hover:bg-accent3"
-											key={id}>
-											<td className="pl-2 pr-2">
-												{new Date(
-													date
-												).toLocaleString()}
-											</td>
-											<td className="pl-2 pr-2">
-												{amount}
-											</td>
-											<td className="pl-2 pr-2">
-												{price}
-											</td>
-										</tr>
-									)
-								)}
-							</tbody>
+							<OrderHistoryHead
+								sortKey={sortKey}
+								setSortKey={setSortKey}
+								sortOrder={sortOrder}
+								setSortOrder={setSortOrder}
+							/>
+							<OrderHistoryBody
+								sortKey={sortKey}
+								sortOrder={sortOrder}
+							/>
 						</table>
 					</div>
 				</div>
