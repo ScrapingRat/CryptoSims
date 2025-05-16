@@ -13,6 +13,17 @@ interface IWallet extends Document {
 	purchaseBtc: [string, Date, number, number];
 	openOrders: [string, Date, number, number, string];
 	compareSeedPhrase(candidateSeedPhrase: string): Promise<boolean>;
+	incBtc(
+		walletId: string,
+		amountBtc: number,
+		amountFiat: number,
+		purcahseId?: string
+	): Promise<{ success: boolean; message: string; purchaseId?: string }>;
+	cancel(
+		walletId: string,
+		orderId: string,
+		refurb: boolean
+	): { success: boolean; message: string };
 }
 
 interface WalletModel extends mongoose.Model<IWallet> {
@@ -49,7 +60,8 @@ interface WalletModel extends mongoose.Model<IWallet> {
 	): { success: boolean; message: string };
 	cancel(
 		walletId: string,
-		orderId: string
+		orderId: string,
+		refurb: boolean
 	): { success: boolean; message: string };
 }
 
@@ -408,13 +420,15 @@ WalletSchema.statics.place = async function (
 
 WalletSchema.statics.cancel = async function (
 	walletId: string,
-	orderId: string
+	orderId: string,
+	refurb: boolean
 ) {
 	const wallet = await this.findById(walletId);
 	if (!wallet) {
 		console.error(`cancel error: Wallet with ID ${walletId} not found.`);
 		return { success: false, message: `Wallet does not exist.` };
 	}
+
 
 	const orderToCancel = (wallet.openOrders || []).find(
 		(order: [string, Date, number, number, string]) =>
@@ -428,13 +442,14 @@ WalletSchema.statics.cancel = async function (
 
 	wallet.openOrders = filteredOrders;
 
-	if (orderToCancel) {
+	if (orderToCancel && refurb) {
 		const amount = orderToCancel[2] || 0;
 		wallet.balanceFiat =
 			Math.round((wallet.balanceFiat + amount) * 1e2) / 1e2;
 	}
 
 	await wallet.save();
+	console.log(wallet.openOrders);
 
 	return {
 		success: true,

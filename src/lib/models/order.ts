@@ -8,7 +8,8 @@ interface IOrder extends Document {
 	limit: number;
 	limitType: string;
 	purchaseId: string;
-	// isExecutable(value: number): Promise<boolean>;
+	isExecutable(value: number): Promise<boolean>;
+	execute(value: number): { success: boolean; message: string };
 }
 
 interface OrderModel extends mongoose.Model<IOrder> {
@@ -20,6 +21,7 @@ interface OrderModel extends mongoose.Model<IOrder> {
 		purchaseId: string
 	): { success: boolean; message: string; id: string };
 	isExecutable(value: number): Promise<boolean>;
+	execute(value: number): { success: boolean; message: string };
 }
 
 const OrderSchema = new Schema({
@@ -51,16 +53,62 @@ const OrderSchema = new Schema({
 
 OrderSchema.methods.isExecutable = async function (value: number) {
 	if (this.limitType === 'buy') {
-		if (this.limit <= value) {
-			return true;
-		}
-	}
-	if (this.limitType === 'sell') {
 		if (this.limit >= value) {
 			return true;
 		}
 	}
+	if (this.limitType === 'sell') {
+		if (this.limit <= value) {
+			return true;
+		}
+	}
 	return false;
+};
+
+OrderSchema.methods.execute = async function (value: number) {
+	try {
+		const wallet = await Wallet.findById(this.walletId);
+		if (!wallet) {
+			return {
+				success: false,
+				message: 'Wallet not found'
+			};
+		}
+		if (this.limitType === 'buy') {
+			if (this.limit < value) {
+				return false;
+			}
+
+			const amountBtc = (this.amount * 1) / value;
+			const i = await Wallet.incBtc(
+				this.walletId,
+				amountBtc,
+				this.amount,
+				this.purchaseId
+			);
+			console.log(i);
+			const b = await Wallet.cancel(this.walletId, this._id, false);
+			console.log(b);
+		}
+
+		// } else if (this.limitType === 'sell') {
+
+		// }
+		await this.deleteOne();
+		return {
+			success: true,
+			message: 'Order executed successfully'
+		};
+	} catch (error) {
+		return {
+			success: false,
+			message:
+				error instanceof Error
+					? error.message
+					: 'An unknown error occurred',
+			id: ''
+		};
+	}
 };
 
 OrderSchema.statics.place = async function (

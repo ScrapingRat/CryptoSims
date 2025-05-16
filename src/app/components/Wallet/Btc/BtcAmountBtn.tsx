@@ -1,7 +1,7 @@
 import { useBtc } from 'app/contexts/BtcContext';
 
 const BtcAmountBtn = () => {
-	const { amount, setIsEditing, inputRef } = useBtc();
+	const { amount, op, setIsEditing, BtcInputRef: inputRef } = useBtc();
 
 	return (
 		<div>
@@ -23,7 +23,7 @@ const BtcAmountBtn = () => {
 					}
 				}}
 				tabIndex={0}>
-				Buy amount: {amount} USD
+				{op === 'buy' ? 'Buy' : 'Sell'} amount: {amount} {op === 'buy' ? 'USD' : 'BTC'}
 			</label>
 		</div>
 	);

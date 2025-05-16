@@ -2,11 +2,17 @@ import { useBtc } from 'app/contexts/BtcContext';
 import { useWallet } from 'app/contexts/WalletContext';
 
 const BtcAmountInput = () => {
-	const { amount, setAmount, setIsEditing, BtcInputRef: inputRef } = useBtc();
-	const { balanceFiat } = useWallet();
+	const {
+		amount,
+		op,
+		setAmount,
+		setIsEditing,
+		BtcInputRef: inputRef
+	} = useBtc();
+	const { balanceFiat, balanceBtc } = useWallet();
 
 	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const value =
+		const buyValue =
 			e.target.value === ''
 				? ''
 				: Math.max(
@@ -16,6 +22,20 @@ const BtcAmountInput = () => {
 							Number(Number(e.target.value).toFixed(2))
 						)
 				  );
+
+		const sellValue =
+			e.target.value === ''
+				? ''
+				: Math.max(
+						0,
+						Math.min(
+							balanceBtc || 0,
+							Number(Number(e.target.value).toFixed(8))
+						)
+				  );
+
+		const value = op === 'buy' ? buyValue : sellValue;
+
 		setAmount(value);
 	};
 
@@ -23,7 +43,7 @@ const BtcAmountInput = () => {
 		<input
 			ref={inputRef}
 			type="number"
-			aria-label="Buy amount"
+			aria-label="amount"
 			value={amount}
 			onChange={handleChange}
 			onBlur={() => {
