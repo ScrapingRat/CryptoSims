@@ -129,7 +129,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 			}
 
 			return res.status(200).json({
-				message: `Limit sell order placed: $${amountBtc} at $${limitFiat} (Order ID: ${order.id})`
+				message: `Limit sell order placed: ${amountBtc} BTC at ${limitFiat} USD (Order ID: ${order.id})`
 			});
 		}
 		// LIMIT //

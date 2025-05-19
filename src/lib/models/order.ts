@@ -28,8 +28,20 @@ const OrderSchema = new Schema({
 	walletId: { type: String, required: true },
 	amount: {
 		type: Number,
-		min: [10, 'Cannot order for less than 10'],
-		required: true
+		required: true,
+		validate: {
+			validator: function (this: IOrder, value: number) {
+				if (this.limitType === 'sell') {
+					return value >= 0.000001;
+				}
+				return value >= 10;
+			},
+			message: function (this: IOrder) {
+				return this.limitType === 'sell'
+					? 'Cannot sell less than 0.000001 BTC'
+					: 'Cannot order for less than 10 USD';
+			}
+		}
 	},
 	limit: {
 		type: Number,
@@ -74,26 +86,35 @@ OrderSchema.methods.execute = async function (value: number) {
 				message: 'Wallet not found'
 			};
 		}
+
+		console.log(this);
 		if (this.limitType === 'buy') {
 			if (this.limit < value) {
 				return false;
 			}
 
-			const amountBtc = (this.amount * 1) / value;
-			const i = await Wallet.incBtc(
+			const amountBtc =
+				Math.round(((this.amount * 1) / value) * 1e8) / 1e8;
+			await Wallet.incBtc(
 				this.walletId,
 				amountBtc,
 				this.amount,
 				this.purchaseId
 			);
-			console.log(i);
-			const b = await Wallet.cancel(this.walletId, this._id, false);
-			console.log(b);
+		} else if (this.limitType === 'sell') {
+			if (this.limit > value) {
+				return false;
+			}
+
+			// const amountBtc = Math.round(this.amount 1e2) / 1e2;
+			// await Wallet.incFiat(
+			// 	this.walletId,
+			// 	amountBtc,
+			// 	this.amount,
+			// 	this.purchaseId
+			// );
 		}
-
-		// } else if (this.limitType === 'sell') {
-
-		// }
+		await Wallet.cancel(this.walletId, this._id, false);
 		await this.deleteOne();
 		return {
 			success: true,
