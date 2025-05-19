@@ -32,13 +32,13 @@ const OrderSchema = new Schema({
 		validate: {
 			validator: function (this: IOrder, value: number) {
 				if (this.limitType === 'sell') {
-					return value >= 0.000001;
+					return value >= 0.0001;
 				}
 				return value >= 10;
 			},
 			message: function (this: IOrder) {
 				return this.limitType === 'sell'
-					? 'Cannot sell less than 0.000001 BTC'
+					? 'Cannot sell less than 0.0001 BTC'
 					: 'Cannot order for less than 10 USD';
 			}
 		}

@@ -115,7 +115,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 			);
 
 			if (!order.success) {
-				await Wallet.incFiat(walletId, amountFiat);
+				await Wallet.incFiat(walletId, amountFiat, false);
 				return res.status(400).json({ error: order.message });
 			}
 
@@ -128,7 +128,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 			);
 
 			if (!walletOrder.success) {
-				await Wallet.incFiat(walletId, amountFiat);
+				await Wallet.incFiat(walletId, amountFiat, false);
 				return res.status(400).json({ error: walletOrder.message });
 			}
 
@@ -164,7 +164,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		if (!btcInc.success) {
 			const { success, message } = await Wallet.incFiat(
 				walletId,
-				amountFiat
+				amountFiat,
+				false
 			);
 
 			if (!success) {

@@ -76,7 +76,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 				.json({ error: 'Order could not be deleted' });
 		}
 
-		const updatedWallet = await Wallet.cancel(walletId, order);
+		const updatedWallet = await Wallet.cancel(walletId, order, true);
 
 		if (!updatedWallet) {
 			return res

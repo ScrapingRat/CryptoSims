@@ -18,13 +18,13 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
 	try {
 		const methodValidation = postMethodSchema.safeParse({
-			method: req.method
+			method: req.method,
 		});
 
 		if (!methodValidation.success) {
 			return res.status(405).json({
 				error: 'Method not allowed',
-				message: 'This endpoint only accepts POST requests'
+				message: 'This endpoint only accepts POST requests',
 			});
 		}
 
@@ -32,7 +32,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
 		if (!dbConnected.success) {
 			return res.status(500).json({
-				error: 'Connection to the database failed'
+				error: 'Connection to the database failed',
 			});
 		}
 
@@ -70,13 +70,13 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
 		if (wallet.balanceBtc < amountBtc) {
 			return res.status(400).json({
-				error: 'Insufficient balance'
+				error: 'Insufficient balance',
 			});
 		}
 
 		if (amountBtc < 0.0001) {
 			return res.status(400).json({
-				error: 'The minimum valid amount for a transaction is 0.0001 BTC'
+				error: 'The minimum valid amount for a transaction is 0.0001 BTC',
 			});
 		}
 
@@ -87,7 +87,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		if (!data) {
 			return res.status(400).json({
 				error: 'No data found',
-				message: 'No OHLC data found for the specified timestamp'
+				message: 'No OHLC data found for the specified timestamp',
 			});
 		}
 
@@ -106,14 +106,20 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
 			if (
 				limitDecimalIndex !== -1 &&
-				limitString.length - limitDecimalIndex - 1 > 2
+				limitString.length - limitDecimalIndex - 1 > 8
 			) {
 				return res
 					.status(400)
-					.json({ error: 'limit can have at most 2 decimals.' });
+					.json({ error: 'limit can have at most 8 decimals.' });
 			}
 
 			const limitFiat: number = parseFloat(limitString);
+
+			const btcDec = await Wallet.decBtc(walletId, amountBtc);
+
+			if (!btcDec.success) {
+				return res.status(400).json({ error: btcDec.message });
+			}
 
 			const order = await Order.place(
 				walletId,
@@ -128,8 +134,21 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 				return res.status(400).json({ error: order.message });
 			}
 
+			const walletOrder = await Wallet.place(
+				walletId,
+				order.id,
+				amountBtc,
+				limitFiat,
+				'sell'
+			);
+
+			if (!walletOrder.success) {
+				await Wallet.incBtc(walletId, amountBtc, fiatAmount);
+				return res.status(400).json({ error: walletOrder.message });
+			}
+
 			return res.status(200).json({
-				message: `Limit sell order placed: ${amountBtc} BTC at ${limitFiat} USD (Order ID: ${order.id})`
+				message: `Limit sell order placed: ${amountBtc} BTC at ${limitFiat} USD (Order ID: ${order.id})`,
 			});
 		}
 		// LIMIT //
@@ -137,6 +156,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		const fiatInc = await Wallet.incFiat(
 			walletId,
 			fiatAmount,
+			true,
 			btcDec.purchaseId
 		);
 
@@ -156,7 +176,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 		}
 
 		return res.status(200).json({
-			message: `Purchased ${fiatAmount} USD for ${amountBtc} BTC`
+			message: `Purchased ${fiatAmount} USD for ${amountBtc} BTC`,
 		});
 	} catch (error) {
 		res.status(401).json({ error });

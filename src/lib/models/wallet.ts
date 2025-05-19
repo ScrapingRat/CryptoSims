@@ -22,7 +22,7 @@ interface IWallet extends Document {
 	cancel(
 		walletId: string,
 		orderId: string,
-		refurb: boolean
+		refund: boolean
 	): { success: boolean; message: string };
 }
 
@@ -32,6 +32,7 @@ interface WalletModel extends mongoose.Model<IWallet> {
 	incFiat(
 		walletId: string,
 		amount: number,
+		save: boolean,
 		purchaseId?: string
 	): { success: boolean; message: string; purchaseId: string };
 	decFiat(
@@ -47,7 +48,8 @@ interface WalletModel extends mongoose.Model<IWallet> {
 	): { success: boolean; message: string; purchaseId: string };
 	decBtc(
 		walletId: string,
-		amount: number,
+		amountBtc: number,
+		amountFiat?: number,
 		purchaseId?: string
 	): { success: boolean; message: string; purchaseId: string };
 	diff(walletId: string): { netProfit: number; percentProfit: number };
@@ -61,7 +63,7 @@ interface WalletModel extends mongoose.Model<IWallet> {
 	cancel(
 		walletId: string,
 		orderId: string,
-		refurb: boolean
+		refund: boolean
 	): { success: boolean; message: string };
 }
 
@@ -148,6 +150,7 @@ WalletSchema.statics.findBySeedPhrase = async function (seedPhrase: string) {
 WalletSchema.statics.incFiat = async function (
 	walletId: string,
 	amount: number,
+	save: boolean,
 	purchaseId: ObjectId
 ) {
 	if (amount < 0) {
@@ -171,17 +174,31 @@ WalletSchema.statics.incFiat = async function (
 		purchaseId = new ObjectId();
 	}
 
-	const updatedWallet = await this.findByIdAndUpdate(
-		walletId,
-		{
-			$set: {
-				balanceFiat:
-					Math.round((wallet.balanceFiat + amount) * 1e2) / 1e2
+	let updatedWallet;
+	if (save) {
+		updatedWallet = await this.findByIdAndUpdate(
+			walletId,
+			{
+				$set: {
+					balanceFiat:
+						Math.round((wallet.balanceFiat + amount) * 1e2) / 1e2
+				},
+				$push: { purchaseFiat: [purchaseId, date, amount] }
 			},
-			$push: { purchaseFiat: [purchaseId, date, amount] }
-		},
-		{ new: true, runValidators: true }
-	);
+			{ new: true, runValidators: true }
+		);
+	} else {
+		updatedWallet = await this.findByIdAndUpdate(
+			walletId,
+			{
+				$set: {
+					balanceFiat:
+						Math.round((wallet.balanceFiat + amount) * 1e2) / 1e2
+				}
+			},
+			{ new: true, runValidators: true }
+		);
+	}
 
 	if (!updatedWallet) {
 		console.error(
@@ -312,11 +329,12 @@ WalletSchema.statics.incBtc = async function (
 
 WalletSchema.statics.decBtc = async function (
 	walletId: string,
-	amount: number,
-	purchaseId: ObjectId
+	amountBtc: number,
+	amountFiat?: number,
+	purchaseId?: ObjectId,
 ) {
-	if (amount < 0) {
-		console.error(`decBtc error: Negative amount attempted: ${amount}`);
+	if (amountBtc < 0) {
+		console.error(`decBtc error: Negative amount attempted: ${amountBtc}`);
 		return {
 			success: false,
 			message: 'Amount cannot be negative.'
@@ -330,7 +348,7 @@ WalletSchema.statics.decBtc = async function (
 		return { success: false, message: `Wallet does not exist.` };
 	}
 
-	if (wallet.balanceBtc < amount) {
+	if (wallet.balanceBtc < amountBtc) {
 		console.error(
 			`decBtc error: Insufficient balance. Wallet ID: ${walletId}, Current Balance: ${wallet.balanceBtc}, Requested: -${amount}`
 		);
@@ -347,9 +365,9 @@ WalletSchema.statics.decBtc = async function (
 		walletId,
 		{
 			$set: {
-				balanceBtc: Math.round((wallet.balanceBtc - amount) * 1e8) / 1e8
+				balanceBtc: Math.round((wallet.balanceBtc - amountBtc) * 1e8) / 1e8
 			},
-			$push: { purchaseBtc: [purchaseId, date, -amount] }
+			$push: { purchaseBtc: [purchaseId, date, -amountBtc, amountFiat] }
 		},
 		{ new: true, runValidators: true, context: 'query' }
 	);
@@ -363,7 +381,7 @@ WalletSchema.statics.decBtc = async function (
 
 	return {
 		success: true,
-		message: `Successfully decreased BTC by ${amount}. New balance is ${updatedWallet.balanceBtc}.`,
+		message: `Successfully decreased BTC by ${amountBtc}. New balance is ${updatedWallet.balanceBtc}.`,
 		purchaseId
 	};
 };
@@ -421,7 +439,7 @@ WalletSchema.statics.place = async function (
 WalletSchema.statics.cancel = async function (
 	walletId: string,
 	orderId: string,
-	refurb: boolean
+	refund: boolean
 ) {
 	const wallet = await this.findById(walletId);
 	if (!wallet) {
@@ -442,7 +460,7 @@ WalletSchema.statics.cancel = async function (
 
 	wallet.openOrders = filteredOrders;
 
-	if (orderToCancel && refurb) {
+	if (orderToCancel && refund) {
 		const amount = orderToCancel[2] || 0;
 		wallet.balanceFiat =
 			Math.round((wallet.balanceFiat + amount) * 1e2) / 1e2;
