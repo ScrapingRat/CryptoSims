@@ -91,15 +91,14 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 			});
 		}
 
-		const btcDec = await Wallet.decBtc(walletId, amountBtc);
+		const amountFiat = parseFloat((data.close * amountBtc).toFixed(2));
 
-		if (!btcDec.success) {
-			return res.status(400).json({ error: btcDec.message });
+		const sellBtc = await Wallet.sellBtc(walletId, amountBtc, amountFiat);
+
+		if (!sellBtc.success) {
+			return res.status(400).json({ error: sellBtc.message });
 		}
 
-		const fiatAmount = parseFloat((data.close * amountBtc).toFixed(2));
-
-		// LIMIT //
 		if (limit) {
 			const limitString = limit as string;
 			const limitDecimalIndex = limitString.indexOf('.');
@@ -115,68 +114,24 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
 			const limitFiat: number = parseFloat(limitString);
 
-			const btcDec = await Wallet.decBtc(walletId, amountBtc);
-
-			if (!btcDec.success) {
-				return res.status(400).json({ error: btcDec.message });
-			}
-
 			const order = await Order.place(
 				walletId,
-				amountBtc,
-				limitFiat,
-				'sell',
-				btcDec.purchaseId
-			);
-
-			if (!order.success) {
-				await Wallet.incBtc(walletId, amountBtc, fiatAmount);
-				return res.status(400).json({ error: order.message });
-			}
-
-			const walletOrder = await Wallet.place(
-				walletId,
-				order.id,
 				amountBtc,
 				limitFiat,
 				'sell'
 			);
 
-			if (!walletOrder.success) {
-				await Wallet.incBtc(walletId, amountBtc, fiatAmount);
-				return res.status(400).json({ error: walletOrder.message });
+			if (!order.success) {
+				return res.status(400).json({ error: order.message });
 			}
 
 			return res.status(200).json({
-				message: `Limit sell order placed: ${amountBtc} BTC at ${limitFiat} USD (Order ID: ${order.id})`,
+				message: `Limit sell order placed: ${amountBtc} BTC at ${limitFiat} USD`,
 			});
-		}
-		// LIMIT //
-
-		const fiatInc = await Wallet.incFiat(
-			walletId,
-			fiatAmount,
-			true,
-			btcDec.purchaseId
-		);
-
-		if (!fiatInc.success) {
-			const { success, message } = await Wallet.incBtc(
-				walletId,
-				amountBtc,
-				fiatAmount
-			);
-
-			if (!success) {
-				return res
-					.status(400)
-					.json({ error: `${message}, ${fiatInc.message}` });
-			}
-			return res.status(400).json({ error: fiatInc.message });
 		}
 
 		return res.status(200).json({
-			message: `Purchased ${fiatAmount} USD for ${amountBtc} BTC`,
+			message: sellBtc.message,
 		});
 	} catch (error) {
 		res.status(401).json({ error });

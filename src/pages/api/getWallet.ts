@@ -59,8 +59,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 			balanceBtc: wallet.balanceBtc,
 			netProfit,
 			percentProfit,
-			historyFiat: wallet.purchaseFiat,
-			historyBtc: wallet.purchaseBtc,
+			historyFiat: wallet.depositHistory,
+			historyBtc: wallet.orderHistory,
 			openOrders: wallet.openOrders
 		});
 	} catch (error) {

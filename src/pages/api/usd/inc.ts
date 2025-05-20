@@ -74,7 +74,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
 		// const timestamp = new Date().getTime() / 1000;
 
-		const { success, message } = await Wallet.incFiat(walletId, amountFiat, false);
+		const { success, message } = await Wallet.deposit(walletId, amountFiat);
 
 		if (!success) {
 			return res.status(400).json({ error: message });

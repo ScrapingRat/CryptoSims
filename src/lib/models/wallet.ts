@@ -9,16 +9,21 @@ interface IWallet extends Document {
 	seedPhraseFingerprint: string;
 	balanceFiat: number;
 	balanceBtc: number;
-	purchaseFiat: [string, Date, number];
-	purchaseBtc: [string, Date, number, number];
+	totalFiat: number;
 	openOrders: [string, Date, number, number, string];
+	orderHistory: [string, Date, number, number];
+	depositHistory: [string, Date, number];
 	compareSeedPhrase(candidateSeedPhrase: string): Promise<boolean>;
-	incBtc(
+	buyBtc(
 		walletId: string,
 		amountBtc: number,
-		amountFiat: number,
-		purcahseId?: string
-	): Promise<{ success: boolean; message: string; purchaseId?: string }>;
+		amountFiat: number
+	): Promise<{ success: boolean; message: string; purchaseId: string }>;
+	sellBtc(
+		walletId: string,
+		amountBtc: number,
+		amountFiat: number
+	): Promise<{ success: boolean; message: string; purchaseId: string }>;
 	cancel(
 		walletId: string,
 		orderId: string,
@@ -28,34 +33,24 @@ interface IWallet extends Document {
 
 interface WalletModel extends mongoose.Model<IWallet> {
 	findBySeedPhrase(seedPhrase: string): Promise<IWallet | null>;
-	// purchaseFiat(amount: number): Promise<string | null>;
-	incFiat(
-		walletId: string,
-		amount: number,
-		save: boolean,
-		purchaseId?: string
-	): { success: boolean; message: string; purchaseId: string };
-	decFiat(
-		walletId: string,
-		amount: number,
-		purchaseId?: string
-	): { success: boolean; message: string; purchaseId: string };
-	incBtc(
+	buyBtc(
 		walletId: string,
 		amountBtc: number,
-		amountFiat: number,
-		purchaseId?: string
+		amountFiat: number
 	): { success: boolean; message: string; purchaseId: string };
-	decBtc(
+	sellBtc(
 		walletId: string,
 		amountBtc: number,
-		amountFiat?: number,
-		purchaseId?: string
+		amountFiat: number
 	): { success: boolean; message: string; purchaseId: string };
+	deposit(
+		walletId: string,
+		amount: number
+	): { success: boolean; message: string };
 	diff(walletId: string): { netProfit: number; percentProfit: number };
 	place(
 		walletId: string,
-		orderId: string,
+		orderId: ObjectId,
 		amount: number,
 		limit: number,
 		type: string
@@ -85,8 +80,16 @@ const WalletSchema = new Schema({
 		min: [0, 'Balance cannot go below zero.'],
 		set: (v: number) => Math.round(v * 1e8) / 1e8
 	},
-	purchaseBtc: { type: Array, required: false },
-	openOrders: { type: Array, required: false }
+	totalFiat: {
+		type: Number,
+		required: true,
+		default: 0,
+		min: [0, 'Balance cannot go below zero.'],
+		set: (v: number) => Math.round(v * 1e2) / 1e2
+	},
+	openOrders: { type: Array, required: false },
+	orderHistory: { type: Array, required: false },
+	depositHistory: { type: Array, required: false }
 });
 
 WalletSchema.index({ seedPhradeFingerprint: 1 });
@@ -147,14 +150,12 @@ WalletSchema.statics.findBySeedPhrase = async function (seedPhrase: string) {
 	return null;
 };
 
-WalletSchema.statics.incFiat = async function (
+WalletSchema.statics.deposit = async function (
 	walletId: string,
-	amount: number,
-	save: boolean,
-	purchaseId: ObjectId
+	amount: number
 ) {
 	if (amount < 0) {
-		console.error(`incFiat error: Negative amount attempted: ${amount}`);
+		console.error(`deposit error: Negative amount attempted: ${amount}`);
 		return {
 			success: false,
 			message: 'Amount cannot be negative.'
@@ -164,177 +165,46 @@ WalletSchema.statics.incFiat = async function (
 	const wallet = await this.findById(walletId);
 
 	if (!wallet) {
-		console.error(`incFiat error: Wallet with ID ${walletId} not found.`);
+		console.error(`deposit error: Wallet with ID ${walletId} not found.`);
 		return { success: false, message: `Wallet does not exist.` };
 	}
 
 	const date = new Date();
-
-	if (!purchaseId) {
-		purchaseId = new ObjectId();
-	}
-
-	let updatedWallet;
-	if (save) {
-		updatedWallet = await this.findByIdAndUpdate(
-			walletId,
-			{
-				$set: {
-					balanceFiat:
-						Math.round((wallet.balanceFiat + amount) * 1e2) / 1e2
-				},
-				$push: { purchaseFiat: [purchaseId, date, amount] }
-			},
-			{ new: true, runValidators: true }
-		);
-	} else {
-		updatedWallet = await this.findByIdAndUpdate(
-			walletId,
-			{
-				$set: {
-					balanceFiat:
-						Math.round((wallet.balanceFiat + amount) * 1e2) / 1e2
-				}
-			},
-			{ new: true, runValidators: true }
-		);
-	}
-
-	if (!updatedWallet) {
-		console.error(
-			`incFiat error: Wallet with ID ${walletId} not found or update failed.`
-		);
-		return { success: false, message: `Failed to update wallet balance.` };
-	}
-
-	return {
-		success: true,
-		message: `Successfully increased USD by ${amount}. New balance is ${updatedWallet.balanceFiat}.`,
-		purchaseId
-	};
-};
-
-WalletSchema.statics.decFiat = async function (
-	walletId: string,
-	amount: number,
-	purchaseId: ObjectId
-) {
-	if (amount < 0) {
-		console.error(`incFiat error: Negative amount attempted: ${amount}`);
-		return {
-			success: false,
-			message: 'Amount cannot be negative.',
-			purchaseId: purchaseId
-		};
-	}
-
-	const wallet = await this.findById(walletId);
-
-	if (!wallet) {
-		console.error(`decFiat error: Wallet with ID ${walletId} not found.`);
-		return { success: false, message: `Wallet does not exist.` };
-	}
-
-	if (wallet.balanceFiat < amount) {
-		console.error(
-			`decFiat error: Insufficient balance. Wallet ID: ${walletId}, Current Balance: ${wallet.balanceFiat}, Requested: -${amount}`
-		);
-		return { success: false, message: `Insufficient balance.` };
-	}
-
-	const date = new Date();
-
-	if (!purchaseId) {
-		purchaseId = new ObjectId();
-	}
+	const depositId = new ObjectId();
 
 	const updatedWallet = await this.findByIdAndUpdate(
 		walletId,
 		{
 			$set: {
 				balanceFiat:
-					Math.round((wallet.balanceFiat - amount) * 1e2) / 1e2
+					Math.round((wallet.balanceFiat + amount) * 1e2) / 1e2,
+				totalFiat: Math.round((wallet.totalFiat + amount) * 1e2) / 1e2
 			},
-			$push: { purchaseFiat: [purchaseId, date, -amount] }
-		},
-		{ new: true, runValidators: true, context: 'query' }
-	);
-
-	if (!updatedWallet) {
-		console.error(
-			`decFiat error: Something went wrong updating wallet with ID ${walletId}.`
-		);
-		return { success: false, message: `Failed to update wallet balance.` };
-	}
-
-	return {
-		success: true,
-		message: `Successfully decreased USD by ${amount}. New balance is ${updatedWallet.balanceFiat}.`,
-		purchaseId
-	};
-};
-
-WalletSchema.statics.incBtc = async function (
-	walletId: string,
-	amountBtc: number,
-	amountFiat: number,
-	purchaseId: ObjectId
-) {
-	if (amountBtc < 0) {
-		console.error(`incBtc error: Negative amount attempted: ${amountBtc}`);
-		return {
-			success: false,
-			message: 'Amount cannot be negative.'
-		};
-	}
-
-	const wallet = await this.findById(walletId);
-
-	if (!wallet) {
-		console.error(`incBtc error: Wallet with ID ${walletId} not found.`);
-		return { success: false, message: `Wallet does not exist.` };
-	}
-
-	const date = new Date();
-
-	if (!purchaseId) {
-		purchaseId = new ObjectId();
-	}
-
-	const updatedWallet = await this.findByIdAndUpdate(
-		walletId,
-		{
-			$set: {
-				balanceBtc:
-					Math.round((wallet.balanceBtc + amountBtc) * 1e8) / 1e8
-			},
-			$push: { purchaseBtc: [purchaseId, date, amountBtc, amountFiat] }
+			$push: { depositHistory: [depositId, amount, date] }
 		},
 		{ new: true, runValidators: true }
 	);
 
 	if (!updatedWallet) {
 		console.error(
-			`incBtc error: Wallet with ID ${walletId} not found or update failed.`
+			`deposit error: Wallet with ID ${walletId} not found or update failed.`
 		);
 		return { success: false, message: `Failed to update wallet balance.` };
 	}
 
 	return {
 		success: true,
-		message: `Successfully increased BTC by ${amountBtc}. New balance is ${updatedWallet.balanceBtc}.`,
-		purchaseId
+		message: `Successfully increased USD by ${amount}. New balance is ${updatedWallet.balanceFiat}.`
 	};
 };
 
-WalletSchema.statics.decBtc = async function (
+WalletSchema.statics.buyBtc = async function (
 	walletId: string,
 	amountBtc: number,
-	amountFiat?: number,
-	purchaseId?: ObjectId,
+	amountFiat: number
 ) {
 	if (amountBtc < 0) {
-		console.error(`decBtc error: Negative amount attempted: ${amountBtc}`);
+		console.error(`buyBtc error: Negative amount attempted: ${amountBtc}`);
 		return {
 			success: false,
 			message: 'Amount cannot be negative.'
@@ -344,30 +214,81 @@ WalletSchema.statics.decBtc = async function (
 	const wallet = await this.findById(walletId);
 
 	if (!wallet) {
-		console.error(`decBtc error: Wallet with ID ${walletId} not found.`);
+		console.error(`buyBtc error: Wallet with ID ${walletId} not found.`);
 		return { success: false, message: `Wallet does not exist.` };
 	}
 
-	if (wallet.balanceBtc < amountBtc) {
-		console.error(
-			`decBtc error: Insufficient balance. Wallet ID: ${walletId}, Current Balance: ${wallet.balanceBtc}, Requested: -${amount}`
-		);
-		return { success: false, message: `Insufficient balance.` };
-	}
-
 	const date = new Date();
-
-	if (!purchaseId) {
-		purchaseId = new ObjectId();
-	}
+	const purchaseId = new ObjectId();
 
 	const updatedWallet = await this.findByIdAndUpdate(
 		walletId,
 		{
 			$set: {
-				balanceBtc: Math.round((wallet.balanceBtc - amountBtc) * 1e8) / 1e8
+				balanceBtc:
+					Math.round((wallet.balanceBtc + amountBtc) * 1e8) / 1e8,
+				balanceFiat:
+					Math.round((wallet.balanceFiat - amountFiat) * 1e2) / 1e2
 			},
-			$push: { purchaseBtc: [purchaseId, date, -amountBtc, amountFiat] }
+			$push: { orderHistory: [purchaseId, date, amountBtc, -amountFiat] }
+		},
+		{ new: true, runValidators: true }
+	);
+
+	if (!updatedWallet) {
+		console.error(
+			`buyBtc error: Wallet with ID ${walletId} not found or update failed.`
+		);
+		return { success: false, message: `Failed to update wallet balance.` };
+	}
+
+	return {
+		success: true,
+		message: `Successfully bought ${amountBtc} BTC for ${amountFiat} USD. New balance is ${updatedWallet.balanceFiat} USD / ${updatedWallet.balanceBtc} BTC.`,
+		purchaseId
+	};
+};
+
+WalletSchema.statics.sellBtc = async function (
+	walletId: string,
+	amountBtc: number,
+	amountFiat: number
+) {
+	if (amountBtc < 0) {
+		console.error(`sellBtc error: Negative amount attempted: ${amountBtc}`);
+		return {
+			success: false,
+			message: 'Amount cannot be negative.'
+		};
+	}
+
+	const wallet = await this.findById(walletId);
+
+	if (!wallet) {
+		console.error(`sellBtc error: Wallet with ID ${walletId} not found.`);
+		return { success: false, message: `Wallet does not exist.` };
+	}
+
+	if (wallet.balanceBtc < amountBtc) {
+		console.error(
+			`sellBtc error: Insufficient balance. Wallet ID: ${walletId}, Current Balance: ${wallet.balanceBtc}, Requested: -${amountBtc}`
+		);
+		return { success: false, message: `Insufficient balance.` };
+	}
+
+	const date = new Date();
+	const purchaseId = new ObjectId();
+
+	const updatedWallet = await this.findByIdAndUpdate(
+		walletId,
+		{
+			$set: {
+				balanceBtc:
+					Math.round((wallet.balanceBtc - amountBtc) * 1e8) / 1e8,
+				balanceFiat:
+					Math.round((wallet.balanceFiat + amountFiat) * 1e2) / 1e2
+			},
+			$push: { orderHistory: [purchaseId, date, -amountBtc, +amountFiat] }
 		},
 		{ new: true, runValidators: true, context: 'query' }
 	);
@@ -381,7 +302,7 @@ WalletSchema.statics.decBtc = async function (
 
 	return {
 		success: true,
-		message: `Successfully decreased BTC by ${amountBtc}. New balance is ${updatedWallet.balanceBtc}.`,
+		message: `Successfully sold ${amountBtc} BTC for ${amountFiat} USD. New balance is ${updatedWallet.balanceFiat} USD / ${updatedWallet.balanceBtc} BTC.`,
 		purchaseId
 	};
 };
@@ -412,16 +333,40 @@ WalletSchema.statics.diff = async function (walletId: string) {
 
 WalletSchema.statics.place = async function (
 	walletId: string,
-	orderId: string,
+	orderId: ObjectId,
 	amount: number,
 	limit: number,
 	type: string
 ) {
 	const date = new Date();
 
-	const updatedWallet = await this.findByIdAndUpdate(walletId, {
-		$push: { openOrders: [orderId, date, amount, limit, type] }
-	});
+	const wallet = await this.findById(walletId);
+
+	if (!wallet) {
+		console.error(
+			`place order error: Wallet with ID ${walletId} not found.`
+		);
+		return { success: false, message: `Wallet does not exist.` };
+	}
+
+	let updatedWallet;
+
+	if (type === 'buy') {
+		updatedWallet = await this.findByIdAndUpdate(walletId, {
+			$push: { openOrders: [orderId, date, amount, limit, type] },
+			$set: {
+				balanceFiat:
+					Math.round((wallet.balanceFiat - amount) * 1e2) / 1e2
+			}
+		});
+	} else if (type === 'sell') {
+		updatedWallet = await this.findByIdAndUpdate(walletId, {
+			$push: { openOrders: [orderId, date, amount, limit, type] },
+			$set: {
+				balanceBtc: Math.round((wallet.balanceBtc - amount) * 1e8) / 1e8
+			}
+		});
+	}
 
 	if (!updatedWallet) {
 		console.error(
@@ -446,7 +391,6 @@ WalletSchema.statics.cancel = async function (
 		console.error(`cancel error: Wallet with ID ${walletId} not found.`);
 		return { success: false, message: `Wallet does not exist.` };
 	}
-
 
 	const orderToCancel = (wallet.openOrders || []).find(
 		(order: [string, Date, number, number, string]) =>

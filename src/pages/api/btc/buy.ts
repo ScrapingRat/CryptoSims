@@ -100,40 +100,19 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
 			const limitFiat: number = parseFloat(limitString);
 
-			const fiatDec = await Wallet.decFiat(walletId, amountFiat);
-
-			if (!fiatDec.success) {
-				return res.status(400).json({ error: fiatDec.message });
-			}
-
 			const order = await Order.place(
 				walletId,
 				amountFiat,
 				limitFiat,
 				'buy',
-				fiatDec.purchaseId
 			);
 
 			if (!order.success) {
-				await Wallet.incFiat(walletId, amountFiat, false);
 				return res.status(400).json({ error: order.message });
 			}
 
-			const walletOrder = await Wallet.place(
-				walletId,
-				order.id,
-				amountFiat,
-				limitFiat,
-				'buy'
-			);
-
-			if (!walletOrder.success) {
-				await Wallet.incFiat(walletId, amountFiat, false);
-				return res.status(400).json({ error: walletOrder.message });
-			}
-
 			return res.status(200).json({
-				message: `Limit buy order placed: $${amountFiat} at BTC = $${limitFiat}`
+				message: `Limit buy order placed: ${amountFiat} USD at BTC = ${limitFiat} USD`
 			});
 		}
 
@@ -146,38 +125,16 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 			});
 		}
 
-		const fiatDec = await Wallet.decFiat(walletId, amountFiat);
+		const amountBtc = parseFloat(((1 / data.close) * amountFiat).toFixed(8));
 
-		if (!fiatDec.success) {
-			return res.status(400).json({ error: fiatDec.message });
-		}
+		const buyBtc = await Wallet.buyBtc(walletId, amountBtc, amountFiat);
 
-		const btcAmount = parseFloat(((1 / data.close) * amountFiat).toFixed(8));
-
-		const btcInc = await Wallet.incBtc(
-			walletId,
-			btcAmount,
-			amountFiat,
-			fiatDec.purchaseId
-		);
-
-		if (!btcInc.success) {
-			const { success, message } = await Wallet.incFiat(
-				walletId,
-				amountFiat,
-				false
-			);
-
-			if (!success) {
-				return res
-					.status(400)
-					.json({ error: `${message}, ${btcInc.message}` });
-			}
-			return res.status(400).json({ error: btcInc.message });
+		if (!buyBtc.success) {
+			return res.status(400).json({ error: buyBtc.message });
 		}
 
 		return res.status(200).json({
-			message: `Purchased ${btcAmount} BTC for ${amountFiat} USD`
+			message: buyBtc.message
 		});
 	} catch (error) {
 		res.status(401).json({ error });

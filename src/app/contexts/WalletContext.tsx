@@ -45,7 +45,7 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
 				balanceBtc: number;
 				netProfit: number;
 				percentProfit: number;
-				historyBtc: Array<[string, Date, number, number]>;
+				orderHistory: Array<[string, Date, number, number]>;
 				openOrders: Array<[string, Date, number, number, string]>;
 				// historySell: Array<[string, Date, number, number]>;
 			}
@@ -86,7 +86,7 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
 				setBalanceBtc(data.balanceBtc);
 				setNetProfit(data.netProfit);
 				setPercentProfit(data.percentProfit);
-				setHistoryBuy(data.historyBtc);
+				setHistoryBuy(data.orderHistory);
 				setOpenOrders(data.openOrders);
 				const now = Math.floor(Date.now() / 1000);
 

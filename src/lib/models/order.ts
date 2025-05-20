@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import Wallet from './wallet';
-// import { ObjectId } from 'mongodb';
+import { ObjectId } from 'mongodb';
 
 interface IOrder extends Document {
 	walletId: string;
@@ -17,8 +17,7 @@ interface OrderModel extends mongoose.Model<IOrder> {
 		walletId: string,
 		amount: number,
 		limit: number,
-		limitType: string,
-		purchaseId: string
+		limitType: string
 	): { success: boolean; message: string; id: string };
 	isExecutable(value: number): Promise<boolean>;
 	execute(value: number): { success: boolean; message: string };
@@ -56,7 +55,7 @@ const OrderSchema = new Schema({
 		},
 		required: true
 	},
-	purchaseId: {
+	orderId: {
 		type: String,
 		required: true,
 		unique: true
@@ -80,6 +79,7 @@ OrderSchema.methods.isExecutable = async function (value: number) {
 OrderSchema.methods.execute = async function (value: number) {
 	try {
 		const wallet = await Wallet.findById(this.walletId);
+
 		if (!wallet) {
 			return {
 				success: false,
@@ -87,7 +87,6 @@ OrderSchema.methods.execute = async function (value: number) {
 			};
 		}
 
-		console.log(this);
 		if (this.limitType === 'buy') {
 			if (this.limit < value) {
 				return false;
@@ -95,24 +94,46 @@ OrderSchema.methods.execute = async function (value: number) {
 
 			const amountBtc =
 				Math.round(((this.amount * 1) / value) * 1e8) / 1e8;
-			await Wallet.incBtc(
-				this.walletId,
-				amountBtc,
-				this.amount,
-				this.purchaseId
-			);
+
+			const updatedWallet = await this.findByIdAndUpdate(this.walletId, {
+				$set: {
+					balanceFiat:
+						Math.round((wallet.balanceFiat + this.amount) * 1e2) /
+						1e2
+				}
+			});
+
+			if (!updatedWallet) {
+				return {
+					success: false,
+					message: `Failed to update wallet.`
+				};
+			}
+
+			await Wallet.buyBtc(this.walletId, amountBtc, this.amount);
 		} else if (this.limitType === 'sell') {
 			if (this.limit > value) {
 				return false;
 			}
 
-			// const amountBtc = Math.round(this.amount 1e2) / 1e2;
-			// await Wallet.incFiat(
-			// 	this.walletId,
-			// 	amountBtc,
-			// 	this.amount,
-			// 	this.purchaseId
-			// );
+			const amountFiat = Math.round(this.amount * value * 1e2) / 1e2;
+
+			const updatedWallet = await this.findByIdAndUpdate(this.walletId, {
+				$set: {
+					balanceBtc:
+						Math.round((wallet.balanceBtc + this.amount) * 1e8) /
+						1e8
+				}
+			});
+
+			if (!updatedWallet) {
+				return {
+					success: false,
+					message: `Failed to update wallet.`
+				};
+			}
+
+			await Wallet.sellBtc(this.walletId, this.amount, amountFiat);
 		}
 		await Wallet.cancel(this.walletId, this._id, false);
 		await this.deleteOne();
@@ -136,22 +157,25 @@ OrderSchema.statics.place = async function (
 	walletId: string,
 	amount: number,
 	limit: number,
-	limitType: string,
-	purchaseId: string
+	limitType: string
 ) {
 	try {
-		const order = await this.create({
+		const orderId = new ObjectId();
+
+		await this.create({
 			walletId,
 			amount,
 			limit,
 			limitType,
-			purchaseId
+			orderId
 		});
+
+		await Wallet.place(walletId, orderId, amount, limit, limitType);
 
 		return {
 			success: true,
 			message: 'Order placed successfully',
-			id: order._id.toString()
+			orderId
 		};
 	} catch (error) {
 		return {
@@ -160,7 +184,7 @@ OrderSchema.statics.place = async function (
 				error instanceof Error
 					? error.message
 					: 'An unknown error occurred',
-			id: ''
+			orderId: ''
 		};
 	}
 };
