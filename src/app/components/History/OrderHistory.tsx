@@ -7,7 +7,7 @@ export type SortKey = 'date' | 'amount' | 'price';
 export type SortOrder = 'asc' | 'desc';
 
 const OrderHistory = () => {
-	const { isUnlocked, historyBuy, fetchWallet } = useWallet();
+	const { isUnlocked, orderHistory, fetchWallet } = useWallet();
 	const [sortKey, setSortKey] = useState<SortKey>('date');
 	const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
@@ -19,7 +19,7 @@ const OrderHistory = () => {
 
 	return (
 		<>
-			{(historyBuy ?? []).length !== 0 && (
+			{(orderHistory ?? []).length !== 0 && (
 				<div className="space-y-4 flex-1 p-6 border border-accent2 rounded-lg bg-background/50">
 					<h2 className="text-l font-bold mb-2 text-center">
 						Order History

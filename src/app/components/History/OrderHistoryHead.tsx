@@ -48,7 +48,7 @@ const OrderHistoryHead = ({
 				<th
 					className={'pl-2 pr-2 py-1 cursor-pointer'}
 					onClick={() => handleSort('amount')}>
-					Amount
+					BTC
 					<span className="ml-1">
 						<span
 							className={
@@ -71,7 +71,7 @@ const OrderHistoryHead = ({
 				<th
 					className={'pl-2 pr-2 py-1 cursor-pointer'}
 					onClick={() => handleSort('price')}>
-					Price
+					USD
 					<span className="ml-1">
 						<span
 							className={

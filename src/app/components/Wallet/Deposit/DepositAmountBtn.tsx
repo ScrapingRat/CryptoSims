@@ -24,7 +24,7 @@ const DepositAmountBtn = () => {
 					}
 				}}
 				tabIndex={0}>
-				Deposit amount: {amount} USD
+				Deposit amount: {Number(amount).toLocaleString()} USD
 			</label>
 		</div>
 	);

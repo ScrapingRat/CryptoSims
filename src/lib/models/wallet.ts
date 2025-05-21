@@ -11,7 +11,7 @@ interface IWallet extends Document {
 	balanceBtc: number;
 	totalFiat: number;
 	openOrders: [string, Date, number, number, string];
-	orderHistory: [string, Date, number, number];
+	orderHistory: [string, Date, number, number, string];
 	depositHistory: [string, Date, number];
 	compareSeedPhrase(candidateSeedPhrase: string): Promise<boolean>;
 	buyBtc(
@@ -26,8 +26,7 @@ interface IWallet extends Document {
 	): Promise<{ success: boolean; message: string; purchaseId: string }>;
 	cancel(
 		walletId: string,
-		orderId: string,
-		refund: boolean
+		orderId: string
 	): { success: boolean; message: string };
 }
 
@@ -57,8 +56,7 @@ interface WalletModel extends mongoose.Model<IWallet> {
 	): { success: boolean; message: string };
 	cancel(
 		walletId: string,
-		orderId: string,
-		refund: boolean
+		orderId: string
 	): { success: boolean; message: string };
 }
 
@@ -194,7 +192,7 @@ WalletSchema.statics.deposit = async function (
 
 	return {
 		success: true,
-		message: `Successfully increased USD by ${amount}. New balance is ${updatedWallet.balanceFiat}.`
+		message: `Successfully increased USD by ${Number(amount).toLocaleString()}. New balance is ${updatedWallet.balanceFiat}.`
 	};
 };
 
@@ -230,7 +228,9 @@ WalletSchema.statics.buyBtc = async function (
 				balanceFiat:
 					Math.round((wallet.balanceFiat - amountFiat) * 1e2) / 1e2
 			},
-			$push: { orderHistory: [purchaseId, date, amountBtc, -amountFiat] }
+			$push: {
+				orderHistory: [purchaseId, date, amountBtc, amountFiat, 'buy']
+			}
 		},
 		{ new: true, runValidators: true }
 	);
@@ -288,7 +288,9 @@ WalletSchema.statics.sellBtc = async function (
 				balanceFiat:
 					Math.round((wallet.balanceFiat + amountFiat) * 1e2) / 1e2
 			},
-			$push: { orderHistory: [purchaseId, date, -amountBtc, +amountFiat] }
+			$push: {
+				orderHistory: [purchaseId, date, amountBtc, amountFiat, 'sell']
+			}
 		},
 		{ new: true, runValidators: true, context: 'query' }
 	);
@@ -309,21 +311,26 @@ WalletSchema.statics.sellBtc = async function (
 
 WalletSchema.statics.diff = async function (walletId: string) {
 	const wallet = await this.findById(walletId);
-
-	let totalFiatSpent = 0;
-
-	for (const [, , , fiatAmount] of wallet.purchaseBtc || []) {
-		totalFiatSpent += fiatAmount;
-	}
-
 	const timestamp = Date.now() / 1000;
-
 	const data = await Ohlc.findByTimestamp(timestamp);
 
+	let btc = 0;
+	let fiat = 0;
+
+	for (const [, , amount, , type] of wallet.openOrders || []) {
+		if (type === 'buy') {
+			fiat += amount;
+		} else if (type === 'sell') {
+			btc += amount;
+		}
+	}
+
 	const btcValue =
-		Math.round((data?.close || 0) * wallet.balanceBtc * 1e2) / 1e2;
-	const netProfit = btcValue - totalFiatSpent;
-	const percentProfit = (netProfit / totalFiatSpent) * 100;
+		Math.round((data?.close || 0) * (wallet.balanceBtc + btc) * 1e2) / 1e2;
+	const totalValue = btcValue + wallet.balanceFiat + fiat;
+
+	const netProfit = totalValue - wallet.totalFiat || 0;
+	const percentProfit = (netProfit / wallet.totalFiat) * 100 || 0;
 
 	return {
 		netProfit: Math.round(netProfit * 1e2) / 1e2,
@@ -383,8 +390,7 @@ WalletSchema.statics.place = async function (
 
 WalletSchema.statics.cancel = async function (
 	walletId: string,
-	orderId: string,
-	refund: boolean
+	orderId: string
 ) {
 	const wallet = await this.findById(walletId);
 	if (!wallet) {
@@ -404,10 +410,15 @@ WalletSchema.statics.cancel = async function (
 
 	wallet.openOrders = filteredOrders;
 
-	if (orderToCancel && refund) {
+	if (orderToCancel) {
 		const amount = orderToCancel[2] || 0;
-		wallet.balanceFiat =
-			Math.round((wallet.balanceFiat + amount) * 1e2) / 1e2;
+		if (orderToCancel[4] === 'buy') {
+			wallet.balanceFiat =
+				Math.round((wallet.balanceFiat + amount) * 1e2) / 1e2;
+		} else if (orderToCancel[4] === 'sell') {
+			wallet.balanceBtc =
+				Math.round((wallet.balanceBtc + amount) * 1e8) / 1e8;
+		}
 	}
 
 	await wallet.save();

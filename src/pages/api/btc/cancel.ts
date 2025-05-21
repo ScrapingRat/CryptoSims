@@ -58,7 +58,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 			return res.status(400).json({ error: 'Invalid order id' });
 		}
 
-		const data = await Order.findById(order);
+		const data = await Order.findOne({ orderId: order});
 
 		if (!data) {
 			return res.status(404).json({ error: 'Order not found' });
@@ -68,7 +68,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 			return res.status(400).json({ error: 'Invalid order' });
 		}
 
-		const deleteOrder = await Order.findByIdAndDelete(order);
+		const deleteOrder = await Order.findOneAndDelete({ orderId: order});
 
 		if (!deleteOrder) {
 			return res
@@ -76,7 +76,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 				.json({ error: 'Order could not be deleted' });
 		}
 
-		const updatedWallet = await Wallet.cancel(walletId, order, true);
+		const updatedWallet = await Wallet.cancel(walletId, order);
 
 		if (!updatedWallet) {
 			return res

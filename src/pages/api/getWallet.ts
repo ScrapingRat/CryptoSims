@@ -60,7 +60,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 			netProfit,
 			percentProfit,
 			historyFiat: wallet.depositHistory,
-			historyBtc: wallet.orderHistory,
+			orderHistory: wallet.orderHistory,
 			openOrders: wallet.openOrders
 		});
 	} catch (error) {

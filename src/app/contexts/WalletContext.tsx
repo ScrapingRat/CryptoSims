@@ -17,7 +17,7 @@ type WalletContextType = {
 	btcToFiat: number;
 	netProfit: number;
 	percentProfit: number;
-	historyBuy: [string, Date, number, number][];
+	orderHistory: [string, Date, number, number, string][];
 	openOrders: [string, Date, number, number, string][];
 	fetchWallet: () => Promise<void>;
 };
@@ -31,8 +31,8 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
 	const [btcToFiat, setBtcToFiat] = useState(0);
 	const [netProfit, setNetProfit] = useState(0);
 	const [percentProfit, setPercentProfit] = useState(0);
-	const [historyBuy, setHistoryBuy] = useState<
-		[string, Date, number, number][]
+	const [orderHistory, setOrderHistory] = useState<
+		[string, Date, number, number, string][]
 	>([]);
 	const [openOrders, setOpenOrders] = useState<
 		[string, Date, number, number, string][]
@@ -45,9 +45,8 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
 				balanceBtc: number;
 				netProfit: number;
 				percentProfit: number;
-				orderHistory: Array<[string, Date, number, number]>;
+				orderHistory: Array<[string, Date, number, number, string]>;
 				openOrders: Array<[string, Date, number, number, string]>;
-				// historySell: Array<[string, Date, number, number]>;
 			}
 
 			const { data, error, refreshed, status } =
@@ -86,7 +85,7 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
 				setBalanceBtc(data.balanceBtc);
 				setNetProfit(data.netProfit);
 				setPercentProfit(data.percentProfit);
-				setHistoryBuy(data.orderHistory);
+				setOrderHistory(data.orderHistory);
 				setOpenOrders(data.openOrders);
 				const now = Math.floor(Date.now() / 1000);
 
@@ -117,7 +116,7 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
 				btcToFiat,
 				netProfit,
 				percentProfit,
-				historyBuy,
+				orderHistory,
 				openOrders,
 				fetchWallet
 			}}>

@@ -93,12 +93,6 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
 		const amountFiat = parseFloat((data.close * amountBtc).toFixed(2));
 
-		const sellBtc = await Wallet.sellBtc(walletId, amountBtc, amountFiat);
-
-		if (!sellBtc.success) {
-			return res.status(400).json({ error: sellBtc.message });
-		}
-
 		if (limit) {
 			const limitString = limit as string;
 			const limitDecimalIndex = limitString.indexOf('.');
@@ -128,6 +122,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 			return res.status(200).json({
 				message: `Limit sell order placed: ${amountBtc} BTC at ${limitFiat} USD`,
 			});
+		}
+
+		const sellBtc = await Wallet.sellBtc(walletId, amountBtc, amountFiat);
+
+		if (!sellBtc.success) {
+			return res.status(400).json({ error: sellBtc.message });
 		}
 
 		return res.status(200).json({

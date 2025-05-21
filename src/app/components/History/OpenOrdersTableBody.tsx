@@ -21,8 +21,24 @@ const OpenOrdersTableBody = ({
 						<td className="pl-2 pr-2">
 							{new Date(date).toLocaleString()}
 						</td>
-						<td className="pl-2 pr-2">{amount}</td>
-						<td className="pl-2 pr-2">{price}</td>
+						<td
+							className={`pl-2 pr-2 ${
+								type === 'buy'
+									? 'text-green-500'
+									: 'text-red-500'
+							}`}>
+							{type === 'buy' ? '▲' : '▼'} {Number(amount).toLocaleString()}
+							<span className='text-xs'>{type === 'buy' ? ' USD' : ' BTC'}</span>
+						</td>
+
+						<td
+							className={`pl-2 pr-2 ${
+								type === 'buy'
+									? 'text-red-500'
+									: 'text-green-500'
+							}`}>
+							{Number(price).toLocaleString()}
+						</td>
 						<td className="pl-2 pr-2">{type}</td>
 						<td
 							className="pl-2 pr-2"

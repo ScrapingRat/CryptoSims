@@ -20,7 +20,7 @@ const BalanceFiat = () => {
 						clipRule="evenodd"
 					/>
 				</svg>
-				<p className="text-l font-bold text-white">{balanceFiat} USD</p>
+				<p className="text-l font-bold text-white">{Number(balanceFiat).toLocaleString()} USD</p>
 			</div>
 		</>
 	);
