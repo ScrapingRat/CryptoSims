@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
+import apiClient from 'lib/apiClient';
 import '../globals.css';
 
 const ReactECharts = dynamic(() => import('echarts-for-react'), { ssr: false });
@@ -170,13 +171,18 @@ const Graph = () => {
 		const fetchAllTimeData = async () => {
 			setLoading(true);
 			const end = Math.floor(Date.now() / 1000);
-			const res = await fetch(
-				`/api/btc/value?from=${FIRST_OHLC_TIMESTAMP}&to=${end}&interval=2592000`
-			);
+
+			const { data } = await apiClient<IOhlc[]>('/api/btc/value', 'GET', {
+				params: {
+					from: FIRST_OHLC_TIMESTAMP.toString(),
+					to: end.toString(),
+					interval: '2592000'
+				},
+				auth: false
+			});
 			let candles: CandleTuple[] = [];
 			let xAxisData: string[] = [];
-			if (res.ok) {
-				const data: IOhlc[] = await res.json();
+			if (data) {
 				candles = data.map((d) => [d.open, d.close, d.low, d.high]);
 				xAxisData = data.map((d) =>
 					new Date(d.timestamp * 1000).toLocaleString()
@@ -225,13 +231,17 @@ const Graph = () => {
 				interval = rangeObj.interval;
 			}
 
-			const res = await fetch(
-				`/api/btc/value?from=${start}&to=${end}&interval=${interval}`
-			);
+			const { data } = await apiClient<IOhlc[]>('/api/btc/value', 'GET', {
+				params: {
+					from: start.toString(),
+					to: end.toString(),
+					interval: interval.toString()
+				},
+				auth: false
+			});
 			let candles: CandleTuple[] = [];
 			let xAxisData: string[] = [];
-			if (res.ok) {
-				const data: IOhlc[] = await res.json();
+			if (data) {
 				candles = data.map((d) => [d.open, d.close, d.low, d.high]);
 				xAxisData = data.map((d) =>
 					new Date(d.timestamp * 1000).toLocaleString()
