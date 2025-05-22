@@ -17,7 +17,7 @@ export default function Home() {
 					<div className="flex flex-col items-center justify-between gap-4 sm:gap-6">
 						{!isUnlocked && <Header />}
 						<Wallet />
-						<Graph />
+						{/* <Graph /> */}
 						{isUnlocked && <History />}
 						<Footer />
 					</div>

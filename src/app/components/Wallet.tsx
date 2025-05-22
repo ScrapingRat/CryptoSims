@@ -7,10 +7,13 @@ import { useWallet } from 'app/contexts/WalletContext';
 import apiClient from 'lib/apiClient';
 import BalanceComponent from './Wallet/Balance/BalanceComponent';
 import BtcComponent from './Wallet/Btc/BtcComponent';
+import { AnimateChangeInHeight } from './Animations/AnimateChangeInHeight';
+import { useIsMdOrLower } from './Animations/useIsMdOrLower';
 
 const Wallet = () => {
 	const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 	const { isUnlocked, setIsUnlocked, fetchWallet } = useWallet();
+	const isMdOrLower = useIsMdOrLower();
 
 	const refreshWalletStatus = () => {
 		setIsUnlocked(true);
@@ -66,10 +69,26 @@ const Wallet = () => {
 		return <p>Loading...</p>;
 	} else if (isUnlocked) {
 		return (
-			<div className="w-full mx-auto flex flex-col md:flex-row gap-4 sm:gap-6">
-				<BalanceComponent />
-				<BtcComponent />
-			</div>
+			<>
+				{!isMdOrLower ? (
+					<AnimateChangeInHeight>
+						<div className="w-full mx-auto flex flex-col md:flex-row gap-4 sm:gap-6">
+							<BalanceComponent />
+							<BtcComponent />
+						</div>
+					</AnimateChangeInHeight>
+				) : (
+					<div className="w-full mx-auto flex flex-col md:flex-row gap-4 sm:gap-6">
+						<AnimateChangeInHeight>
+							<BalanceComponent />
+						</AnimateChangeInHeight>
+
+						<AnimateChangeInHeight>
+							<BtcComponent />
+						</AnimateChangeInHeight>
+					</div>
+				)}
+			</>
 		);
 	} else {
 		return <NoWalletPage onWalletUnlocked={refreshWalletStatus} />;

@@ -71,7 +71,7 @@ const UnlockWalletPage = ({
 			<div>
 				<form
 					id="wallet-form"
-					className="space-y-6"
+					className="space-y-6 sm:space-y-4"
 					onSubmit={handleSubmit}
 					noValidate>
 					<div>
@@ -122,7 +122,7 @@ const UnlockWalletPage = ({
 						setSeedPhrase('');
 					}}
 					type="button"
-					className="mt-8 w-full max-w-md mx-auto flex-1 py-3 px-4 bg-accent2 text-white rounded-lg hover:bg-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+					className="mt-4 sm:mt-6 w-full max-w-md mx-auto flex-1 py-3 px-4 bg-accent2 text-white rounded-lg hover:bg-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
 					Cancel
 				</button>
 			</div>

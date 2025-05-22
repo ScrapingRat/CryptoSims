@@ -98,7 +98,7 @@ const BinanceTicker: React.FC = () => {
 				{change !== null && changePercent !== null && (
 					<div className={`${changeColor} text-xs`}>
 						24h ≃ {change > 0 ? '+' : ''}
-						{change.toFixed(2)} ({changePercent > 0 ? '+' : ''}
+						{Number(change.toFixed(2)).toLocaleString()} ({changePercent > 0 ? '+' : ''}
 						{changePercent.toFixed(2)}%)
 					</div>
 				)}

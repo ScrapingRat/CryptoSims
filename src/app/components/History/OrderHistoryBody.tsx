@@ -28,7 +28,9 @@ const OrderHistoryBody = ({
 	return (
 		<tbody>
 			{sortedHistory.map(([id, date, amount, price, type]) => (
-				<tr className="even:bg-hover hover:bg-accent3" key={id}>
+				<tr className="even:bg-hover hover:bg-accent3" key={id} title={
+					`${Number(1 / amount * price).toLocaleString()}`
+				}>
 					<td className="pl-2 pr-2">
 						{new Date(date).toLocaleString()}
 					</td>

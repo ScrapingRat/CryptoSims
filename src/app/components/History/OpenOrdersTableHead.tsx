@@ -11,9 +11,9 @@ const OpenOrdersTableHead = () => {
 				<th scope="col" className="pl-2 pr-2 py-1">
 					Target
 				</th>
-				<th scope="col" className="pl-2 pr-2 py-1">
+				{/* <th scope="col" className="pl-2 pr-2 py-1">
 					Type
-				</th>
+				</th> */}
 				<th
 					scope="col"
 					className="pl-2 pr-2 py-1"

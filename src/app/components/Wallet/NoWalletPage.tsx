@@ -15,7 +15,7 @@ const NoWalletPage = ({ onWalletUnlocked }: NoWalletPageProps) => {
 			<h1 className="text-3xl font-bold content-center text-center">
 				Wallet
 			</h1>
-			<div className="w-full max-w-md mx-auto space-y-8">
+			<div className="w-full max-w-md mx-auto space-y-4 sm:space-y-6">
 				{!isCreating && (
 					<UnlockWalletPage
 						isUnlocking={isUnlocking}

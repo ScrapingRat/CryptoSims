@@ -23,7 +23,8 @@ const BtcAmountBtn = () => {
 					}
 				}}
 				tabIndex={0}>
-				{op === 'buy' ? 'Buy' : 'Sell'} amount: {amount} {op === 'buy' ? 'USD' : 'BTC'}
+				{op === 'buy' ? 'Buy' : 'Sell'} amount:{' '}
+				{Number(amount).toLocaleString()} {op === 'buy' ? 'USD' : 'BTC'}
 			</label>
 		</div>
 	);

@@ -56,7 +56,8 @@ interface WalletModel extends mongoose.Model<IWallet> {
 	): { success: boolean; message: string };
 	cancel(
 		walletId: string,
-		orderId: string
+		orderId: string,
+		refund: boolean
 	): { success: boolean; message: string };
 }
 
@@ -192,7 +193,11 @@ WalletSchema.statics.deposit = async function (
 
 	return {
 		success: true,
-		message: `Successfully increased USD by ${Number(amount).toLocaleString()}. New balance is ${updatedWallet.balanceFiat}.`
+		message: `Successfully increased USD by ${Number(
+			amount
+		).toLocaleString()}. New balance is ${Number(
+			updatedWallet.balanceFiat
+		).toLocaleString()}.`
 	};
 };
 
@@ -244,7 +249,15 @@ WalletSchema.statics.buyBtc = async function (
 
 	return {
 		success: true,
-		message: `Successfully bought ${amountBtc} BTC for ${amountFiat} USD. New balance is ${updatedWallet.balanceFiat} USD / ${updatedWallet.balanceBtc} BTC.`,
+		message: `Successfully bought ${Number(
+			amountBtc
+		).toLocaleString()} BTC for ${Number(
+			amountFiat
+		).toLocaleString()} USD. New balance is ${Number(
+			updatedWallet.balanceFiat
+		).toLocaleString()} USD / ${Number(
+			updatedWallet.balanceBtc
+		).toLocaleString()} BTC.`,
 		purchaseId
 	};
 };
@@ -271,7 +284,11 @@ WalletSchema.statics.sellBtc = async function (
 
 	if (wallet.balanceBtc < amountBtc) {
 		console.error(
-			`sellBtc error: Insufficient balance. Wallet ID: ${walletId}, Current Balance: ${wallet.balanceBtc}, Requested: -${amountBtc}`
+			`sellBtc error: Insufficient balance. Wallet ID: ${walletId}, Current Balance: ${Number(
+				wallet.balanceBtc
+			).toLocaleString()}, Requested: -${Number(
+				amountBtc
+			).toLocaleString()}`
 		);
 		return { success: false, message: `Insufficient balance.` };
 	}
@@ -304,7 +321,15 @@ WalletSchema.statics.sellBtc = async function (
 
 	return {
 		success: true,
-		message: `Successfully sold ${amountBtc} BTC for ${amountFiat} USD. New balance is ${updatedWallet.balanceFiat} USD / ${updatedWallet.balanceBtc} BTC.`,
+		message: `Successfully sold ${Number(
+			amountBtc
+		).toLocaleString()} BTC for ${Number(
+			amountFiat
+		).toLocaleString()} USD. New balance is ${Number(
+			updatedWallet.balanceFiat
+		).toLocaleString()} USD / ${Number(
+			updatedWallet.balanceBtc
+		).toLocaleString()} BTC.`,
 		purchaseId
 	};
 };
@@ -333,8 +358,10 @@ WalletSchema.statics.diff = async function (walletId: string) {
 	const percentProfit = (netProfit / wallet.totalFiat) * 100 || 0;
 
 	return {
-		netProfit: Math.round(netProfit * 1e2) / 1e2,
-		percentProfit: Math.round(percentProfit * 1e2) / 1e2
+		netProfit: Number(Math.round(netProfit * 1e2) / 1e2).toLocaleString(),
+		percentProfit: Number(
+			Math.round(percentProfit * 1e2) / 1e2
+		).toLocaleString()
 	};
 };
 
@@ -384,13 +411,18 @@ WalletSchema.statics.place = async function (
 
 	return {
 		success: true,
-		message: `Limit buy order placed: $${amount} at BTC = $${limit} (Order ID: ${orderId})`
+		message: `Limit buy order placed: $${Number(
+			amount
+		).toLocaleString()} at BTC = $${Number(
+			limit
+		).toLocaleString()} (Order ID: ${Number(orderId).toLocaleString()})`
 	};
 };
 
 WalletSchema.statics.cancel = async function (
 	walletId: string,
-	orderId: string
+	orderId: string,
+	refund: boolean
 ) {
 	const wallet = await this.findById(walletId);
 	if (!wallet) {
@@ -410,7 +442,7 @@ WalletSchema.statics.cancel = async function (
 
 	wallet.openOrders = filteredOrders;
 
-	if (orderToCancel) {
+	if (orderToCancel && refund) {
 		const amount = orderToCancel[2] || 0;
 		if (orderToCancel[4] === 'buy') {
 			wallet.balanceFiat =

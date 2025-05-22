@@ -104,7 +104,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 				walletId,
 				amountFiat,
 				limitFiat,
-				'buy',
+				'buy'
 			);
 
 			if (!order.success) {
@@ -112,7 +112,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 			}
 
 			return res.status(200).json({
-				message: `Limit buy order placed: ${amountFiat} USD at BTC = ${limitFiat} USD`
+				message: `Limit buy order placed: ${Number(
+					amountFiat
+				).toLocaleString()} USD at BTC = ${Number(
+					limitFiat
+				).toLocaleString()} USD`
 			});
 		}
 
@@ -125,7 +129,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 			});
 		}
 
-		const amountBtc = parseFloat(((1 / data.close) * amountFiat).toFixed(8));
+		const amountBtc = parseFloat(
+			((1 / data.close) * amountFiat).toFixed(8)
+		);
 
 		const buyBtc = await Wallet.buyBtc(walletId, amountBtc, amountFiat);
 

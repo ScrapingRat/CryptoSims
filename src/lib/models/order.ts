@@ -95,13 +95,17 @@ OrderSchema.methods.execute = async function (value: number) {
 			const amountBtc =
 				Math.round(((this.amount * 1) / value) * 1e8) / 1e8;
 
-			const updatedWallet = await this.findByIdAndUpdate(this.walletId, {
-				$set: {
-					balanceFiat:
-						Math.round((wallet.balanceFiat + this.amount) * 1e2) /
-						1e2
+			const updatedWallet = await Wallet.findByIdAndUpdate(
+				this.walletId,
+				{
+					$set: {
+						balanceFiat:
+							Math.round(
+								(wallet.balanceFiat + this.amount) * 1e2
+							) / 1e2
+					}
 				}
-			});
+			);
 
 			if (!updatedWallet) {
 				return {
@@ -118,13 +122,17 @@ OrderSchema.methods.execute = async function (value: number) {
 
 			const amountFiat = Math.round(this.amount * value * 1e2) / 1e2;
 
-			const updatedWallet = await this.findByIdAndUpdate(this.walletId, {
-				$set: {
-					balanceBtc:
-						Math.round((wallet.balanceBtc + this.amount) * 1e8) /
-						1e8
+			const updatedWallet = await Wallet.findByIdAndUpdate(
+				this.walletId,
+				{
+					$set: {
+						balanceBtc:
+							Math.round(
+								(wallet.balanceBtc + this.amount) * 1e8
+							) / 1e8
+					}
 				}
-			});
+			);
 
 			if (!updatedWallet) {
 				return {
@@ -135,7 +143,7 @@ OrderSchema.methods.execute = async function (value: number) {
 
 			await Wallet.sellBtc(this.walletId, this.amount, amountFiat);
 		}
-		await Wallet.cancel(this.walletId, this._id, false);
+		await Wallet.cancel(this.walletId, this.orderId, false);
 		await this.deleteOne();
 		return {
 			success: true,

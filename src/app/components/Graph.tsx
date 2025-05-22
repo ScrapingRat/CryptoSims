@@ -40,7 +40,12 @@ const Graph = () => {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const [option, setOption] = useState<any>({
 		title: {
-			show: window.innerWidth < 600 ? false : true,
+			show:
+				typeof window !== 'undefined'
+					? window.innerWidth < 600
+						? false
+						: true
+					: true,
 			text: 'BTC/USD',
 			left: 'left',
 			textStyle: {
@@ -64,7 +69,12 @@ const Graph = () => {
 			min: 'dataMin',
 			max: 'dataMax',
 			axisLabel: {
-				show: window.innerWidth < 600 ? false : true,
+				show:
+					typeof window !== 'undefined'
+						? window.innerWidth < 600
+							? false
+							: true
+						: true,
 				color: '#ccc'
 			}
 		},
@@ -75,8 +85,18 @@ const Graph = () => {
 				areaStyle: { color: ['#111', '#0a0a0a'] }
 			},
 			axisLabel: {
-				inside: window.innerWidth < 600 ? true : false,
-				margin: window.innerWidth < 600 ? 0 : 10,
+				inside:
+					typeof window !== 'undefined'
+						? window.innerWidth < 600
+							? true
+							: false
+						: false,
+				margin:
+					typeof window !== 'undefined'
+						? window.innerWidth < 600
+							? 0
+							: 10
+						: 10,
 				overflow: 'break',
 				color: '#ededed'
 			},
@@ -84,10 +104,30 @@ const Graph = () => {
 			splitLine: { lineStyle: { color: '#333' } }
 		},
 		grid: {
-			left: window.innerWidth < 600 ? 0 : '10%',
-			right: window.innerWidth < 600 ? 12 : '10%',
-			bottom: window.innerWidth < 600 ? 40 : '15%',
-			top: window.innerWidth < 600 ? 24 : 60
+			left:
+				typeof window !== 'undefined'
+					? window.innerWidth < 600
+						? 0
+						: '10%'
+					: '10%',
+			right:
+				typeof window !== 'undefined'
+					? window.innerWidth < 600
+						? 12
+						: '10%'
+					: '10%',
+			bottom:
+				typeof window !== 'undefined'
+					? window.innerWidth < 600
+						? 40
+						: '15%'
+					: '15%',
+			top:
+				typeof window !== 'undefined'
+					? window.innerWidth < 600
+						? 24
+						: 60
+					: 60
 		},
 		dataZoom: [
 			{ type: 'inside', start: 0, end: 100 },
@@ -219,31 +259,31 @@ const Graph = () => {
 				...prev,
 				title: {
 					...prev.title,
-					show: window.innerWidth < 600 ? false : true,
+					show: window.innerWidth < 600 ? false : true
 				},
 				xAxis: {
 					...prev.xAxis,
 					show: window.innerWidth < 600 ? false : true,
 					axisLabel: {
 						...prev.xAxis.axisLabel,
-						show: window.innerWidth < 600 ? false : true,
-					},
+						show: window.innerWidth < 600 ? false : true
+					}
 				},
 				yAxis: {
 					...prev.yAxis,
 					axisLabel: {
 						...prev.yAxis.axisLabel,
 						inside: window.innerWidth < 600 ? true : false,
-						margin: window.innerWidth < 600 ? 0 : 10,
-					},
+						margin: window.innerWidth < 600 ? 0 : 10
+					}
 				},
 				grid: {
 					...prev.grid,
 					left: window.innerWidth < 600 ? 0 : '10%',
 					right: window.innerWidth < 600 ? 12 : '10%',
 					bottom: window.innerWidth < 600 ? 40 : '15%',
-					top: window.innerWidth < 600 ? 24 : 60,
-				},
+					top: window.innerWidth < 600 ? 24 : 60
+				}
 			}));
 		};
 

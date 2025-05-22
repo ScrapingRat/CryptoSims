@@ -22,7 +22,7 @@ const BtcLimitBtn = () => {
 				}
 			}}
 			tabIndex={0}>
-			Target price: {target} USD
+			Target price: {Number(target).toLocaleString()} USD
 		</label>
 	);
 };

@@ -39,7 +39,7 @@ const OpenOrdersTableBody = ({
 							}`}>
 							{Number(price).toLocaleString()}
 						</td>
-						<td className="pl-2 pr-2">{type}</td>
+						{/* <td className="pl-2 pr-2">{type}</td> */}
 						<td
 							className="pl-2 pr-2"
 							style={{

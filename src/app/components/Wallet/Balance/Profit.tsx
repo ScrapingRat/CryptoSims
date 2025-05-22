@@ -7,7 +7,7 @@ const Profit = () => {
 			className={`text-l font-bold text-center lg-text-base lg-whitespace-nowrap`}>
 			<p>
 				{Number(balanceBtc).toLocaleString()} BTC
-				<span className="text-xs"> ≃ {btcToFiat} USD</span>
+				<span className="text-xs"> ≃ {Number(btcToFiat).toLocaleString()} USD</span>
 			</p>
 			<p
 				className={`text-xs text-center ${

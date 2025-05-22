@@ -17,7 +17,7 @@ interface OhlcDataInput {
 }
 
 const update = async () => {
-	const BATCH_SIZE = 1000;
+	const BATCH_SIZE = 3000;
 	let batchBuffer: OhlcDataInput[] = [];
 	let totalProcessed = 0;
 	let successCount = 0;
