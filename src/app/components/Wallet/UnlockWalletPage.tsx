@@ -12,7 +12,7 @@ interface UnlockWalletPageProps {
 const UnlockWalletPage = ({
 	isUnlocking,
 	setIsUnlocking,
-	onWalletUnlocked
+	onWalletUnlocked,
 }: UnlockWalletPageProps) => {
 	const [message, setMessage] = useState('');
 	const [error, setError] = useState('');
@@ -34,7 +34,7 @@ const UnlockWalletPage = ({
 			const { data, error, errorMessage } =
 				await apiClient<UnlockResponse>('api/unlock', 'POST', {
 					auth: false,
-					body: JSON.stringify({ seedPhrase })
+					body: JSON.stringify({ seedPhrase }),
 				});
 
 			if (error) {
@@ -80,15 +80,52 @@ const UnlockWalletPage = ({
 							className="block text-sm font-medium text-gray-300 mb-2">
 							Enter your seed phrase
 						</label>
-						<textarea
-							id="seed"
-							className="w-full p-3 border border-accent2 rounded-lg bg-background text-white focus:ring-2 focus:ring-accent2 focus:outline-none"
-							rows={3}
-							placeholder="Enter your 12-word seed phrase..."
-							value={seedPhrase}
-							onChange={(e) => setSeedPhrase(e.target.value)}
-							required
-						/>
+						<div className="relative">
+							<textarea
+								id="seed"
+								className="w-full p-3 border border-accent2 rounded-lg bg-background text-white focus:ring-2 focus:ring-accent2 focus:outline-none pr-12 min-h-[72px]"
+								rows={3}
+								placeholder="Enter your 12-word seed phrase..."
+								value={seedPhrase}
+								onChange={(e) => setSeedPhrase(e.target.value)}
+								required
+							/>
+							<button
+								type="button"
+								onClick={async () => {
+									try {
+										if (
+											typeof navigator !== 'undefined' &&
+											navigator.clipboard &&
+											window.isSecureContext
+										) {
+											const text =
+												await navigator.clipboard.readText();
+											setSeedPhrase(text);
+										} else {
+											alert(
+												'Clipboard API not supported in this browser.'
+											);
+										}
+									} catch (err) {
+										console.error('Failed to paste: ', err);
+									}
+								}}
+								className="absolute right-3 top-3 p-1.5 text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 rounded transition-colors"
+								title="Paste from clipboard"
+								style={{ zIndex: 2 }}>
+								{/* Paste icon */}
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									className="h-5 w-5"
+									viewBox="0 0 20 20"
+									fill="currentColor"
+									role="img"
+									aria-label="Paste from clipboard">
+									<path d="M8 2a2 2 0 00-2 2v1H5a2 2 0 00-2 2v9a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H8zm0 2V4h4V4a1 1 0 01-1 1H9A1 1 0 018 4z" />
+								</svg>
+							</button>
+						</div>
 						{loading && (
 							<p className="mt-2 text-sm text-yellow-500">
 								Unlocking wallet...
