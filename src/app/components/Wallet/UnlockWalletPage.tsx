@@ -103,7 +103,7 @@ const UnlockWalletPage = ({
 												await navigator.clipboard.readText();
 											setSeedPhrase(text);
 										} else {
-											alert(
+											setError(
 												'Clipboard API not supported in this browser.'
 											);
 										}
