@@ -7,7 +7,7 @@ import {
 } from '@schemas/tokenSchema';
 import crypto from 'crypto';
 
-const { SECRET_KEY } = getConfig();
+const { SECRET_KEY, SECRET_KEY_REFRESH } = getConfig();
 const ACCESS_TOKEN_EXPIRY = 15 * 60;
 
 interface RefreshResult {
@@ -50,7 +50,7 @@ const refreshAccessToken = async (
 		try {
 			const decoded = jwt.verify(
 				tokenValidation.data.refresh_token,
-				SECRET_KEY,
+				SECRET_KEY_REFRESH,
 				{
 					algorithms: ['HS256']
 				}
