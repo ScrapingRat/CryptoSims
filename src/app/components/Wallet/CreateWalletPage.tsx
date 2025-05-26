@@ -10,7 +10,7 @@ interface CreateWalletPageProps {
 
 const CreateWalletPage = ({
 	isCreating,
-	setIsCreating
+	setIsCreating,
 }: CreateWalletPageProps) => {
 	const [isLoading, setIsLoading] = useState(false);
 	const [seedPhrase, setSeedPhrase] = useState('');
@@ -19,9 +19,28 @@ const CreateWalletPage = ({
 
 	const copyToClipboard = async () => {
 		try {
-			await navigator.clipboard.writeText(seedPhrase);
-			setCopied(true);
-			setTimeout(() => setCopied(false), 2000);
+			if (
+				typeof navigator !== 'undefined' &&
+				navigator.clipboard &&
+				window.isSecureContext
+			) {
+				await navigator.clipboard.writeText(seedPhrase);
+				setCopied(true);
+				setTimeout(() => setCopied(false), 2000);
+			} else {
+				// Fallback for unsupported environments
+				const textArea = document.createElement('textarea');
+				textArea.value = seedPhrase;
+				textArea.style.position = 'fixed';
+				textArea.style.left = '-9999px';
+				document.body.appendChild(textArea);
+				textArea.focus();
+				textArea.select();
+				document.execCommand('copy');
+				document.body.removeChild(textArea);
+				setCopied(true);
+				setTimeout(() => setCopied(false), 2000);
+			}
 		} catch (err) {
 			console.error('Failed to copy: ', err);
 		}
@@ -41,7 +60,7 @@ const CreateWalletPage = ({
 				'api/create',
 				'POST',
 				{
-					body: JSON.stringify({ seedPhrase })
+					body: JSON.stringify({ seedPhrase }),
 				}
 			);
 
