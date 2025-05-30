@@ -5,7 +5,10 @@ import Navbar from './components/Navbar/Navbar';
 
 export const metadata: Metadata = {
 	title: 'CryptoSims',
-	description: 'Virtual wallet companion'
+	description: 'Virtual wallet companion',
+	appleWebApp: {
+		title: 'Cryptosims'
+	}
 };
 
 export default function RootLayout({

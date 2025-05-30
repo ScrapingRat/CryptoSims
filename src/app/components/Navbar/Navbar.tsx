@@ -16,7 +16,7 @@ export default function Navbar() {
 					href="/"
 					className="flex items-center space-x-3 rtl:space-x-reverse">
 					<Image
-						src="/cryptosims.png"
+						src="/cryptosims.svg"
 						alt="Cryptosims"
 						width={30}
 						height={30}

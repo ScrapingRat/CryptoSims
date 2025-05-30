@@ -4,12 +4,20 @@ import Ohlc, { IOhlc } from '@models/ohlc';
 import connectToDatabase from '@actions/connectToDatabase';
 // import authorizeToken from 'lib/authorizeToken';
 import { getMethodSchema } from '@schemas/methodSchema';
-import rateLimit from 'lib/rateLimit';
 import fs from 'fs';
 import path from 'path';
 
 const ROUTE_ENABLED = true;
 const MAX_RANGE_MINUTES = 60 * 24 * 365 * 15;
+
+export interface COhlc {
+	t: number;
+	o: number;
+	h: number;
+	l: number;
+	c: number;
+	v: number;
+}
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     if (!ROUTE_ENABLED) {
@@ -143,10 +151,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                 const staticPath = path.join(process.cwd(), 'public', 'ohlc_1296000.json');
                 if (fs.existsSync(staticPath)) {
                     const fileData = fs.readFileSync(staticPath, 'utf-8');
-                    const allData: IOhlc[] = JSON.parse(fileData);
+                    const allData: COhlc[] = JSON.parse(fileData);
                     // Optionally filter by timestampFrom/timestampTo
-                    const filtered = allData.filter((d: IOhlc) =>
-                        d.timestamp >= timestampFrom && d.timestamp <= timestampTo
+                    const filtered = allData.filter((d: COhlc) =>
+                        d.t >= timestampFrom && d.t <= timestampTo
                     );
                     return res.status(200).json(filtered);
                 }
@@ -156,10 +164,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                 const staticPath = path.join(process.cwd(), 'public', 'ohlc_86400.json');
                 if (fs.existsSync(staticPath)) {
                     const fileData = fs.readFileSync(staticPath, 'utf-8');
-                    const allData: IOhlc[] = JSON.parse(fileData);
+                    const allData: COhlc[] = JSON.parse(fileData);
                     // Optionally filter by timestampFrom/timestampTo
-                    const filtered = allData.filter((d: IOhlc) =>
-                        d.timestamp >= timestampFrom && d.timestamp <= timestampTo
+                    const filtered = allData.filter((d: COhlc) =>
+                        d.t >= timestampFrom && d.t <= timestampTo
                     );
                     return res.status(200).json(filtered);
                 }
@@ -181,12 +189,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                                 ]
                             }
                         },
-                        open: { $first: "$open" },
-                        high: { $max: "$high" },
-                        low: { $min: "$low" },
-                        close: { $last: "$close" },
-                        volume: { $sum: "$volume" },
-                        timestamp: { $first: "$timestamp" }
+                        o: { $first: "$open" },
+                        h: { $max: "$high" },
+                        l: { $min: "$low" },
+                        c: { $last: "$close" },
+                        v: { $sum: "$volume" },
+                        t: { $first: "$timestamp" }
                     }
                 },
                 { $sort: { _id: 1 } }
@@ -213,4 +221,3 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 };
 
 export default handler;
-// export default rateLimit(3, 1 * 60 * 1000)(handler);

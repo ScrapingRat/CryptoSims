@@ -3,15 +3,36 @@ import dynamic from 'next/dynamic';
 import apiClient from 'lib/apiClient';
 import '../globals.css';
 
-const ReactECharts = dynamic(() => import('echarts-for-react'), { ssr: false });
+// Import core
+import * as echarts from 'echarts/core';
+import {
+  TitleComponent,
+  TooltipComponent,
+  GridComponent,
+  DataZoomComponent
+} from 'echarts/components';
+import { CandlestickChart } from 'echarts/charts';
+import { CanvasRenderer } from 'echarts/renderers';
+
+// Register components
+echarts.use([
+  TitleComponent,
+  TooltipComponent,
+  GridComponent,
+  DataZoomComponent,
+  CandlestickChart,
+  CanvasRenderer
+]);
+
+const ReactECharts = dynamic(() => import('echarts-for-react/lib/core'), { ssr: false });
 
 export interface IOhlc {
-	timestamp: number;
-	open: number;
-	high: number;
-	low: number;
-	close: number;
-	volume: number;
+	t: number;
+	o: number;
+	h: number;
+	l: number;
+	c: number;
+	v: number;
 }
 
 type CandleTuple = [number, number, number, number];
@@ -19,21 +40,27 @@ type CandleTuple = [number, number, number, number];
 const ranges = [
 	{ label: '30 mins', value: 30 * 60, interval: 60 },
 	{ label: '24 hours', value: 24 * 60 * 60, interval: 300 },
-	{ label: '7 days', value: 7 * 24 * 60 * 60, interval: 3600 },
-	{ label: '1 month', value: 30 * 24 * 60 * 60, interval: 86400 },
+	{ label: '7 days', value: 7 * 24 * 60 * 60, interval: 1800 },
+	{ label: '1 month', value: 30 * 24 * 60 * 60, interval: 10800 },
 	{ label: '1 year', value: 365 * 24 * 60 * 60, interval: 86400 },
 	{ label: 'All time', value: null, interval: 1296000 }
 ];
 
 const FIRST_OHLC_TIMESTAMP = 1325412060;
 
+interface CacheEntry {
+	candles: CandleTuple[];
+	xAxisData: string[];
+	timestamp: number;
+	range: number | null;
+}
+
+const cache: Record<string, CacheEntry> = {};
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+
 const Graph = () => {
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	const [data, setData] = useState<CandleTuple[]>([]);
-	const [allTimeData, setAllTimeData] = useState<{
-		candles: CandleTuple[];
-		xAxisData: string[];
-	} | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [selectedRange, setSelectedRange] = useState<number | null>(
 		ranges[0].value
@@ -168,60 +195,39 @@ const Graph = () => {
 	type EChartsOption = typeof option;
 
 	useEffect(() => {
-		const fetchAllTimeData = async () => {
-			setLoading(true);
-			const end = Math.floor(Date.now() / 1000);
-
-			const { data } = await apiClient<IOhlc[]>('/api/btc/value', 'GET', {
-				params: {
-					from: FIRST_OHLC_TIMESTAMP.toString(),
-					to: end.toString(),
-					interval: '1296000'
-				},
-				auth: false
-			});
-			let candles: CandleTuple[] = [];
-			let xAxisData: string[] = [];
-			if (data) {
-				candles = data.map((d) => [d.open, d.close, d.low, d.high]);
-				xAxisData = data.map((d) =>
-					new Date(d.timestamp * 1000).toLocaleString()
-				);
-			}
-			setAllTimeData({ candles, xAxisData });
-			setLoading(false);
-		};
-		fetchAllTimeData();
-	}, []);
-
-	useEffect(() => {
 		let cancelled = false;
 		const fetchData = async () => {
 			setLoading(true);
-			let start: number;
-			let interval: number;
 			const end = Math.floor(Date.now() / 1000);
 
 			const rangeObj =
 				ranges.find((r) => r.value === selectedRange) ||
 				ranges[ranges.length - 1];
 
-			if (rangeObj.label === 'All time') {
-				if (allTimeData) {
-					setData(allTimeData.candles);
+			// Check cache first
+			const cacheKey = `${selectedRange}`;
+			const cachedData = cache[cacheKey];
+			const now = Date.now();
+
+			if (
+				cachedData &&
+				now - cachedData.timestamp < CACHE_DURATION &&
+				cachedData.range === selectedRange
+			) {
+				if (!cancelled) {
+					setData(cachedData.candles);
 					setOption((prev: EChartsOption) => ({
 						...prev,
-						xAxis: { ...prev.xAxis, data: allTimeData.xAxisData },
-						series: [
-							{ ...prev.series[0], data: allTimeData.candles }
-						]
+						xAxis: { ...prev.xAxis, data: cachedData.xAxisData },
+						series: [{ ...prev.series[0], data: cachedData.candles }]
 					}));
 					setLoading(false);
-				} else {
-					setLoading(true);
 				}
 				return;
 			}
+
+			let start: number;
+			let interval: number;
 
 			if (rangeObj.value) {
 				start = end - rangeObj.value;
@@ -242,10 +248,18 @@ const Graph = () => {
 			let candles: CandleTuple[] = [];
 			let xAxisData: string[] = [];
 			if (data) {
-				candles = data.map((d) => [d.open, d.close, d.low, d.high]);
+				candles = data.map((d) => [d.o, d.c, d.l, d.h]);
 				xAxisData = data.map((d) =>
-					new Date(d.timestamp * 1000).toLocaleString()
+					new Date(d.t * 1000).toLocaleString()
 				);
+
+				// Update cache
+				cache[cacheKey] = {
+					candles,
+					xAxisData,
+					timestamp: now,
+					range: selectedRange
+				};
 			}
 			if (!cancelled) {
 				setData(candles);
@@ -261,7 +275,7 @@ const Graph = () => {
 		return () => {
 			cancelled = true;
 		};
-	}, [selectedRange, allTimeData]);
+	}, [selectedRange]);
 
 	useEffect(() => {
 		const handleResize = () => {
@@ -324,6 +338,7 @@ const Graph = () => {
 				</div>
 			)}
 			<ReactECharts
+				echarts={echarts}
 				option={option}
 				style={{ height: 400, width: '100%' }}
 				notMerge={true}
