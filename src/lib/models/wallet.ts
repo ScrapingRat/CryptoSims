@@ -69,7 +69,7 @@ const WalletSchema = new Schema({
 		required: true,
 		default: 0,
 		min: [0, 'Balance cannot go below zero.'],
-		set: (v: number) => Math.round(v * 1e2) / 1e2
+		set: (v: number) => Math.round(v * 1e2) / 1e2,
 	},
 	purchaseFiat: { type: Array, required: false },
 	balanceBtc: {
@@ -77,18 +77,18 @@ const WalletSchema = new Schema({
 		required: true,
 		default: 0,
 		min: [0, 'Balance cannot go below zero.'],
-		set: (v: number) => Math.round(v * 1e8) / 1e8
+		set: (v: number) => Math.round(v * 1e8) / 1e8,
 	},
 	totalFiat: {
 		type: Number,
 		required: true,
 		default: 0,
 		min: [0, 'Balance cannot go below zero.'],
-		set: (v: number) => Math.round(v * 1e2) / 1e2
+		set: (v: number) => Math.round(v * 1e2) / 1e2,
 	},
 	openOrders: { type: Array, required: false },
 	orderHistory: { type: Array, required: false },
-	depositHistory: { type: Array, required: false }
+	depositHistory: { type: Array, required: false },
 });
 
 WalletSchema.index({ seedPhradeFingerprint: 1 });
@@ -137,7 +137,7 @@ WalletSchema.statics.findBySeedPhrase = async function (seedPhrase: string) {
 	const hash = crypto.createHash('sha256').update(seedPhrase).digest('hex');
 
 	const potentialWallets = await this.find({
-		seedPhraseFingerprint: fingerprint
+		seedPhraseFingerprint: fingerprint,
 	});
 
 	for (const wallet of potentialWallets) {
@@ -157,7 +157,7 @@ WalletSchema.statics.deposit = async function (
 		console.error(`deposit error: Negative amount attempted: ${amount}`);
 		return {
 			success: false,
-			message: 'Amount cannot be negative.'
+			message: 'Amount cannot be negative.',
 		};
 	}
 
@@ -177,9 +177,9 @@ WalletSchema.statics.deposit = async function (
 			$set: {
 				balanceFiat:
 					Math.round((wallet.balanceFiat + amount) * 1e2) / 1e2,
-				totalFiat: Math.round((wallet.totalFiat + amount) * 1e2) / 1e2
+				totalFiat: Math.round((wallet.totalFiat + amount) * 1e2) / 1e2,
 			},
-			$push: { depositHistory: [depositId, amount, date] }
+			$push: { depositHistory: [depositId, amount, date] },
 		},
 		{ new: true, runValidators: true }
 	);
@@ -197,7 +197,7 @@ WalletSchema.statics.deposit = async function (
 			amount
 		).toLocaleString()}. New balance is ${Number(
 			updatedWallet.balanceFiat
-		).toLocaleString()}.`
+		).toLocaleString()}.`,
 	};
 };
 
@@ -210,7 +210,7 @@ WalletSchema.statics.buyBtc = async function (
 		console.error(`buyBtc error: Negative amount attempted: ${amountBtc}`);
 		return {
 			success: false,
-			message: 'Amount cannot be negative.'
+			message: 'Amount cannot be negative.',
 		};
 	}
 
@@ -231,11 +231,11 @@ WalletSchema.statics.buyBtc = async function (
 				balanceBtc:
 					Math.round((wallet.balanceBtc + amountBtc) * 1e8) / 1e8,
 				balanceFiat:
-					Math.round((wallet.balanceFiat - amountFiat) * 1e2) / 1e2
+					Math.round((wallet.balanceFiat - amountFiat) * 1e2) / 1e2,
 			},
 			$push: {
-				orderHistory: [purchaseId, date, amountBtc, amountFiat, 'buy']
-			}
+				orderHistory: [purchaseId, date, amountBtc, amountFiat, 'buy'],
+			},
 		},
 		{ new: true, runValidators: true }
 	);
@@ -258,7 +258,7 @@ WalletSchema.statics.buyBtc = async function (
 		).toLocaleString()} USD / ${Number(
 			updatedWallet.balanceBtc
 		).toLocaleString()} BTC.`,
-		purchaseId
+		purchaseId,
 	};
 };
 
@@ -271,7 +271,7 @@ WalletSchema.statics.sellBtc = async function (
 		console.error(`sellBtc error: Negative amount attempted: ${amountBtc}`);
 		return {
 			success: false,
-			message: 'Amount cannot be negative.'
+			message: 'Amount cannot be negative.',
 		};
 	}
 
@@ -303,11 +303,11 @@ WalletSchema.statics.sellBtc = async function (
 				balanceBtc:
 					Math.round((wallet.balanceBtc - amountBtc) * 1e8) / 1e8,
 				balanceFiat:
-					Math.round((wallet.balanceFiat + amountFiat) * 1e2) / 1e2
+					Math.round((wallet.balanceFiat + amountFiat) * 1e2) / 1e2,
 			},
 			$push: {
-				orderHistory: [purchaseId, date, amountBtc, amountFiat, 'sell']
-			}
+				orderHistory: [purchaseId, date, amountBtc, amountFiat, 'sell'],
+			},
 		},
 		{ new: true, runValidators: true, context: 'query' }
 	);
@@ -330,7 +330,7 @@ WalletSchema.statics.sellBtc = async function (
 		).toLocaleString()} USD / ${Number(
 			updatedWallet.balanceBtc
 		).toLocaleString()} BTC.`,
-		purchaseId
+		purchaseId,
 	};
 };
 
@@ -358,10 +358,8 @@ WalletSchema.statics.diff = async function (walletId: string) {
 	const percentProfit = (netProfit / wallet.totalFiat) * 100 || 0;
 
 	return {
-		netProfit: Number(Math.round(netProfit * 1e2) / 1e2).toLocaleString(),
-		percentProfit: Number(
-			Math.round(percentProfit * 1e2) / 1e2
-		).toLocaleString()
+		netProfit: Math.round(netProfit * 1e2) / 1e2,
+		percentProfit: Math.round(percentProfit * 1e2) / 1e2,
 	};
 };
 
@@ -390,15 +388,16 @@ WalletSchema.statics.place = async function (
 			$push: { openOrders: [orderId, date, amount, limit, type] },
 			$set: {
 				balanceFiat:
-					Math.round((wallet.balanceFiat - amount) * 1e2) / 1e2
-			}
+					Math.round((wallet.balanceFiat - amount) * 1e2) / 1e2,
+			},
 		});
 	} else if (type === 'sell') {
 		updatedWallet = await this.findByIdAndUpdate(walletId, {
 			$push: { openOrders: [orderId, date, amount, limit, type] },
 			$set: {
-				balanceBtc: Math.round((wallet.balanceBtc - amount) * 1e8) / 1e8
-			}
+				balanceBtc:
+					Math.round((wallet.balanceBtc - amount) * 1e8) / 1e8,
+			},
 		});
 	}
 
@@ -415,7 +414,7 @@ WalletSchema.statics.place = async function (
 			amount
 		).toLocaleString()} at BTC = $${Number(
 			limit
-		).toLocaleString()} (Order ID: ${Number(orderId).toLocaleString()})`
+		).toLocaleString()} (Order ID: ${Number(orderId).toLocaleString()})`,
 	};
 };
 
@@ -460,7 +459,7 @@ WalletSchema.statics.cancel = async function (
 		success: true,
 		message:
 			`Order ${orderId} removed from openOrders.` +
-			(orderToCancel ? ` Refunded $${orderToCancel[2]} to balance.` : '')
+			(orderToCancel ? ` Refunded $${orderToCancel[2]} to balance.` : ''),
 	};
 };
 

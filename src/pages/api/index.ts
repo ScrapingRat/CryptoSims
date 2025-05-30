@@ -171,7 +171,23 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 				],
 				example:
 					'curl -X POST http://localhost:3000/api/update -H "x-api-key: your-api-key"'
-			}
+			},
+
+			{
+				path: '/api/catchup',
+				method: 'POST',
+				description: 'Trigger an update of OHLC data from real-time data.',
+				headers: [
+					{
+						name: 'x-api-key',
+						type: 'string',
+						description: 'API key for authentication.',
+						required: true
+					}
+				],
+				example:
+					'curl -X POST http://localhost:3000/api/catchup -H "x-api-key: your-api-key"'
+			},
 		]
 	});
 };

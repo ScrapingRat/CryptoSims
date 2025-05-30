@@ -4,6 +4,9 @@ import Ohlc, { IOhlc } from '@models/ohlc';
 import connectToDatabase from '@actions/connectToDatabase';
 // import authorizeToken from 'lib/authorizeToken';
 import { getMethodSchema } from '@schemas/methodSchema';
+import rateLimit from 'lib/rateLimit';
+import fs from 'fs';
+import path from 'path';
 
 const ROUTE_ENABLED = true;
 const MAX_RANGE_MINUTES = 60 * 24 * 365 * 15;
@@ -136,6 +139,32 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             let intvl = parseInt((interval as string) || "0", 10);
             if (isNaN(intvl) || intvl < 60) intvl = 60; // default to 1 minute
 
+            if (intvl === 1296000) {
+                const staticPath = path.join(process.cwd(), 'public', 'ohlc_1296000.json');
+                if (fs.existsSync(staticPath)) {
+                    const fileData = fs.readFileSync(staticPath, 'utf-8');
+                    const allData: IOhlc[] = JSON.parse(fileData);
+                    // Optionally filter by timestampFrom/timestampTo
+                    const filtered = allData.filter((d: IOhlc) =>
+                        d.timestamp >= timestampFrom && d.timestamp <= timestampTo
+                    );
+                    return res.status(200).json(filtered);
+                }
+            }
+
+            if (intvl === 86400) {
+                const staticPath = path.join(process.cwd(), 'public', 'ohlc_86400.json');
+                if (fs.existsSync(staticPath)) {
+                    const fileData = fs.readFileSync(staticPath, 'utf-8');
+                    const allData: IOhlc[] = JSON.parse(fileData);
+                    // Optionally filter by timestampFrom/timestampTo
+                    const filtered = allData.filter((d: IOhlc) =>
+                        d.timestamp >= timestampFrom && d.timestamp <= timestampTo
+                    );
+                    return res.status(200).json(filtered);
+                }
+            }
+
             const matchStage = {
                 timestamp: { $gte: timestampFrom, $lte: timestampTo }
             };
@@ -184,3 +213,4 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 };
 
 export default handler;
+// export default rateLimit(3, 1 * 60 * 1000)(handler);

@@ -7,6 +7,7 @@ import connectToDatabase from '@actions/connectToDatabase';
 import Wallet from '@models/wallet';
 import { postMethodSchema } from '@schemas/methodSchema';
 import seedBodySchema from '@schemas/seedBodySchema';
+import rateLimit from 'lib/rateLimit';
 
 const { SECRET_KEY, SECRET_KEY_REFRESH } = getConfig();
 const ROUTE_ENABLED = true;
@@ -141,4 +142,4 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 	}
 };
 
-export default handler;
+export default rateLimit(3, 1 * 60 * 1000)(handler);

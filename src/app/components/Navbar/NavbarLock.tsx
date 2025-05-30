@@ -14,8 +14,6 @@ const NavbarLock = () => {
 				'DELETE'
 			);
 
-			//NEED TO BE ABLE TO LOCK EVEN IF ONLINE BY DELETING THE COOKIES FROM HERE
-
 			if (!error) {
 				console.log(data?.message);
 				setIsUnlocked(false);

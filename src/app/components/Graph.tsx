@@ -21,8 +21,8 @@ const ranges = [
 	{ label: '24 hours', value: 24 * 60 * 60, interval: 300 },
 	{ label: '7 days', value: 7 * 24 * 60 * 60, interval: 3600 },
 	{ label: '1 month', value: 30 * 24 * 60 * 60, interval: 86400 },
-	{ label: '1 year', value: 365 * 24 * 60 * 60, interval: 604800 },
-	{ label: 'All time', value: null, interval: 2592000 }
+	{ label: '1 year', value: 365 * 24 * 60 * 60, interval: 86400 },
+	{ label: 'All time', value: null, interval: 1296000 }
 ];
 
 const FIRST_OHLC_TIMESTAMP = 1325412060;
@@ -176,7 +176,7 @@ const Graph = () => {
 				params: {
 					from: FIRST_OHLC_TIMESTAMP.toString(),
 					to: end.toString(),
-					interval: '2592000'
+					interval: '1296000'
 				},
 				auth: false
 			});

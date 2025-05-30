@@ -2,3 +2,6 @@
 node_modules
 .next
 data.csv
+public/ohlc_86400.json
+public/ohlc_1296000.json
+public/ohlc_2592000.json
