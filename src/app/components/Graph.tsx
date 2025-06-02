@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import apiClient from 'lib/apiClient';
 import '../globals.css';
@@ -6,25 +6,27 @@ import '../globals.css';
 // Import core
 import * as echarts from 'echarts/core';
 import {
-  TitleComponent,
-  TooltipComponent,
-  GridComponent,
-  DataZoomComponent
+	TitleComponent,
+	TooltipComponent,
+	GridComponent,
+	DataZoomComponent
 } from 'echarts/components';
 import { CandlestickChart } from 'echarts/charts';
 import { CanvasRenderer } from 'echarts/renderers';
 
 // Register components
 echarts.use([
-  TitleComponent,
-  TooltipComponent,
-  GridComponent,
-  DataZoomComponent,
-  CandlestickChart,
-  CanvasRenderer
+	TitleComponent,
+	TooltipComponent,
+	GridComponent,
+	DataZoomComponent,
+	CandlestickChart,
+	CanvasRenderer
 ]);
 
-const ReactECharts = dynamic(() => import('echarts-for-react/lib/core'), { ssr: false });
+const ReactECharts = dynamic(() => import('echarts-for-react/lib/core'), {
+	ssr: false
+});
 
 export interface IOhlc {
 	t: number;
@@ -57,6 +59,7 @@ interface CacheEntry {
 
 const cache: Record<string, CacheEntry> = {};
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+const POLLING_INTERVAL = 10 * 1000; // 10 seconds in milliseconds
 
 const Graph = () => {
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -219,7 +222,9 @@ const Graph = () => {
 					setOption((prev: EChartsOption) => ({
 						...prev,
 						xAxis: { ...prev.xAxis, data: cachedData.xAxisData },
-						series: [{ ...prev.series[0], data: cachedData.candles }]
+						series: [
+							{ ...prev.series[0], data: cachedData.candles }
+						]
 					}));
 					setLoading(false);
 				}
@@ -315,13 +320,124 @@ const Graph = () => {
 		return () => window.removeEventListener('resize', handleResize);
 	}, []);
 
+	const fetchLatestCandle = useCallback(async () => {
+		if (selectedRange !== ranges[0].value || loading) return;
+
+		const end = Math.floor(Date.now() / 1000);
+		const start = end - 120;
+
+		try {
+			const { data: latestData } = await apiClient<IOhlc[]>(
+				'/api/btc/value',
+				'GET',
+				{
+					params: {
+						from: start.toString(),
+						to: end.toString(),
+						interval: '60'
+					},
+					auth: false
+				}
+			);
+
+			if (latestData && latestData.length > 0) {
+				const sortedData = latestData
+					.sort((a, b) => b.t - a.t)
+					.slice(0, 2);
+
+				const [currentCandle, previousCandle] = sortedData;
+
+				setOption((prev: EChartsOption) => {
+					const newCandles = [...prev.series[0].data];
+					const newXAxisData = [...prev.xAxis.data];
+
+					if (currentCandle) {
+						const latestCandle: CandleTuple = [
+							currentCandle.o,
+							currentCandle.c,
+							currentCandle.l,
+							currentCandle.h
+						];
+						const timestamp = new Date(
+							currentCandle.t * 1000
+						).toLocaleString();
+
+						if (
+							timestamp === newXAxisData[newXAxisData.length - 1]
+						) {
+							newCandles[newCandles.length - 1] = latestCandle;
+						} else {
+							newCandles.push(latestCandle);
+							newXAxisData.push(timestamp);
+							if (newCandles.length > 30) {
+								newCandles.shift();
+								newXAxisData.shift();
+							}
+						}
+					}
+
+					if (previousCandle && newCandles.length > 1) {
+						const prevCandle: CandleTuple = [
+							previousCandle.o,
+							previousCandle.c,
+							previousCandle.l,
+							previousCandle.h
+						];
+						const prevTimestamp = new Date(
+							previousCandle.t * 1000
+						).toLocaleString();
+
+						if (
+							prevTimestamp ===
+							newXAxisData[newXAxisData.length - 2]
+						) {
+							newCandles[newCandles.length - 2] = prevCandle;
+						}
+					}
+
+					const cacheKey = `${selectedRange}`;
+					cache[cacheKey] = {
+						candles: newCandles,
+						xAxisData: newXAxisData,
+						timestamp: Date.now(),
+						range: selectedRange
+					};
+
+					return {
+						...prev,
+						xAxis: { ...prev.xAxis, data: newXAxisData },
+						series: [{ ...prev.series[0], data: newCandles }]
+					};
+				});
+			}
+		} catch (error) {
+			console.error('Error fetching latest candles:', error);
+		}
+	}, [selectedRange, loading]);
+
+	useEffect(() => {
+		let pollInterval: NodeJS.Timeout;
+
+		if (selectedRange === ranges[0].value) {
+			fetchLatestCandle();
+
+			pollInterval = setInterval(fetchLatestCandle, POLLING_INTERVAL);
+		}
+
+		return () => {
+			if (pollInterval) {
+				clearInterval(pollInterval);
+			}
+		};
+	}, [selectedRange, fetchLatestCandle]);
+
 	return (
 		<div className="w-full mx-auto p-6 border border-accent2 rounded-lg bg-background/50">
 			<div className="flex gap-2 mb-4 flex-wrap">
 				{ranges.map((r) => (
 					<button
 						key={r.label}
-						className={`px-3 py-1 rounded border text-xs hover:bg-accent1 ${
+						className={`px-3 py-1 rounded border text-xs hover:bg-accent1 relative ${
 							selectedRange === r.value
 								? 'bg-accent2 text-white'
 								: 'bg-background border-accent2 text-accent2'
@@ -329,6 +445,13 @@ const Graph = () => {
 						style={{ flex: '1 0 100px', minWidth: 0 }}
 						onClick={() => setSelectedRange(r.value)}>
 						{r.label}
+						{selectedRange === ranges[0].value &&
+							r.value === ranges[0].value && (
+								<span className="absolute top-0 right-0 w-2 h-2">
+									<span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent2 opacity-75"></span>
+									<span className="relative inline-flex rounded-full h-2 w-2 bg-accent2"></span>
+								</span>
+							)}
 					</button>
 				))}
 			</div>

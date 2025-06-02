@@ -3,38 +3,22 @@ import getConfig from 'lib/getConfig';
 import { postMethodSchema } from '@schemas/methodSchema';
 import connectToDatabase from '@actions/connectToDatabase';
 import { listOrders } from '@actions/listOrders';
-import WebSocket from 'ws';
 
 const { API_KEY } = getConfig();
 const ROUTE_ENABLED = true;
 
-const BINANCE_WS_URL = 'wss://stream.binance.com:9443/ws/btcusdt@trade';
 
-const getRealtimeBTCPrice = (): Promise<number> => {
-	return new Promise((resolve, reject) => {
-		const ws = new WebSocket(BINANCE_WS_URL);
-		ws.on('message', (data: string) => {
-			try {
-				const parsed = JSON.parse(data);
-				if (parsed.p) {
-					ws.close();
-					resolve(parseFloat(parsed.p));
-				}
-			} catch (e) {
-				ws.close();
-				reject(e);
-			}
-		});
-		ws.on('error', (err: Error) => {
-			ws.close();
-			reject(err);
-		});
-		// Timeout after 5 seconds
-		setTimeout(() => {
-			ws.close();
-			reject(new Error('Timeout getting BTC price from Binance'));
-		}, 5000);
-	});
+const getRealtimeBTCPrice = async (): Promise<number> => {
+	try {
+		const response = await fetch('http://localhost:3001');
+		if (!response.ok) {
+			throw new Error(`HTTP error! status: ${response.status}`);
+		}
+		const data = await response.json();
+		return data.formattedPrice;
+	} catch (error) {
+		throw new Error(`HTTP error! status: ${error instanceof Error ? error.message : 'Unknown error'}`);
+	}
 };
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {

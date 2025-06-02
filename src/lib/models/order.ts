@@ -9,7 +9,11 @@ interface IOrder extends Document {
 	limitType: string;
 	purchaseId: string;
 	isExecutable(value: number): Promise<boolean>;
-	execute(value: number): { success: boolean; message: string };
+	execute(value: number): {
+		target: number;
+		success: boolean;
+		message: string;
+	};
 }
 
 interface OrderModel extends mongoose.Model<IOrder> {
@@ -20,7 +24,11 @@ interface OrderModel extends mongoose.Model<IOrder> {
 		limitType: string
 	): { success: boolean; message: string; id: string };
 	isExecutable(value: number): Promise<boolean>;
-	execute(value: number): { success: boolean; message: string };
+	execute(value: number): {
+		target: number;
+		success: boolean;
+		message: string;
+	};
 }
 
 const OrderSchema = new Schema({
@@ -89,7 +97,10 @@ OrderSchema.methods.execute = async function (value: number) {
 
 		if (this.limitType === 'buy') {
 			if (this.limit < value) {
-				return false;
+				return {
+					target: this.limit,
+					success: false
+				};
 			}
 
 			const amountBtc =
@@ -117,7 +128,10 @@ OrderSchema.methods.execute = async function (value: number) {
 			await Wallet.buyBtc(this.walletId, amountBtc, this.amount);
 		} else if (this.limitType === 'sell') {
 			if (this.limit > value) {
-				return false;
+				return {
+					target: this.limit,
+					success: false
+				};
 			}
 
 			const amountFiat = Math.round(this.amount * value * 1e2) / 1e2;
@@ -146,11 +160,13 @@ OrderSchema.methods.execute = async function (value: number) {
 		await Wallet.cancel(this.walletId, this.orderId, false);
 		await this.deleteOne();
 		return {
+			target: this.limit,
 			success: true,
 			message: 'Order executed successfully'
 		};
 	} catch (error) {
 		return {
+			target: this.limit,
 			success: false,
 			message:
 				error instanceof Error
