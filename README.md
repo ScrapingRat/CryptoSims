@@ -1,4 +1,3 @@
-
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
@@ -13,6 +12,8 @@ curl -X POST http://localhost:3000/api/update -H 'x-api-key: $API_KEY'
 curl -X POST http://localhost:3000/api/catchup -H 'x-api-key: $API_KEY'
 ```
 
+An additional server (express) is used to sideload /src/app/server.js to avoid Binance API limit rate. To avoid over-complicating the startup of nextjs, it runs as a standalone instance. A cron job is used to run /api/catchup and /api/execute.
+
 [http://localhost:3000](http://localhost:3000)
 
 ## Introduction
@@ -21,50 +22,45 @@ Cryptomoneys investments simulation. The goal is to produce a SPA (Single Page A
 
 ### Candle Graph
 
-- [] Changing the duration range
-- [] Changing duration of each candle
-- [] Showing basic infos when hovering a candle
+[Apache Echarts](https://echarts.apache.org/en/index.html)
 
 ### Wallet Simulation
 
-- [] Selecting an initial amount to invest in selected assets
-- [] Placing orders (market price, limit, stop-loss, minimum)
-- [] Visualization of assets
-- [] No registration system needed to save the wallet in the backend (must use a seed and passphrase?)
+<ul>
+	<li>Selecting an initial amount to invest in selected assets</li>
+	<li>Placing orders (market price, limit price)</li>
+	<li>Visualization of assets</li>
+	<li>No registration system needed to save the wallet in the backend</li>
+	<li>Wallet history</li>
+</ul>
 
 ### API
 
-- [] https://coinmarketcap.com/api/
-- [] No API calls from the frontend
-- [] Near to real-time data
-- [] Taking into account the API limit rate (roughly 1 API call every 5 seconds)
+<ul>
+	<li>Binance API</li>
+	<li>Near to real-time data</li>
+</ul>
 
 ## Tech Stack
 
 <ul>
 	<li>NextJS/MongoDB</li>
-	<li>Tailwind CSS/HeadlessUI</li>
+	<li>Tailwind CSS</li>
 	<li>100% Typescript</li>
 	<li>Pure functions, no class object</li>
-	<li>ZodTS for validation/schemas</li>
-	<li>No React class component</li>
-	<li>Usage of a store is allowed, Zustand is recommended, Redux is interesting but overkill</li>
-	<li>ESLint is mandatory</li>
-	<li>Prettier is mandatory</li>
-	<li>100% tests coverage E2E (Cypress or another)</li>
-	<li>No WebSocket/SSE, must use pollers or HTTP longpolling</li>
+	<li>ESLint</li>
+	<li>Prettier</li>
+	<li>Memory based API rate-limit</li>
 </ul>
 
-### Bonus
+### WIP
 
 <ul>
 	<li>Jest unit tests for the backend</li>
-	<li>Wallet history</li>
 	<li>Offline handling</li>
 	<li>PWA Android/iOS</li>
+	<li>Blacklist JWT when locking wallet</li>
+	<li>100% tests coverage E2E (Cypress or another)</li>
+	<li>ZodTS for validation/schemas</li>
+	<li>Moving all the authentication in the wallet context</li>
 </ul>
-
-### To do
-
-- [] Keep loading components if DB is not up
-- [] Blacklist JWT when locking wallet
